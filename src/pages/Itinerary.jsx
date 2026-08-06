@@ -1,9 +1,12 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useDispatch } from '../hooks/useDispatch.js'
 
 function Itinerary() {
   const { steps, status } = useDispatch()
   const [index, setIndex] = useState(0)
+
+  const scrollRef = useRef(null)
+  const dragRef = useRef({ dragging: false, startX: 0, startY: 0, scrollLeft: 0, scrollTop: 0 })
 
   const step = steps[index]
 
@@ -15,8 +18,45 @@ function Itinerary() {
     setIndex((i) => Math.min(i + 1, steps.length - 1))
   }
 
+  // Scroll arrastrando (dedo o mouse) en vez de depender del gesto nativo de
+  // touch — útil cuando la pantalla táctil se reporta como mouse.
+  function onPointerDown(event) {
+    const el = scrollRef.current
+    if (!el || event.target.closest('button, a, input, select, textarea')) return
+    dragRef.current = {
+      dragging: true,
+      startX: event.clientX,
+      startY: event.clientY,
+      scrollLeft: el.scrollLeft,
+      scrollTop: el.scrollTop,
+    }
+    el.setPointerCapture(event.pointerId)
+  }
+
+  function onPointerMove(event) {
+    const el = scrollRef.current
+    if (!el || !dragRef.current.dragging) return
+    el.scrollLeft = dragRef.current.scrollLeft - (event.clientX - dragRef.current.startX)
+    el.scrollTop = dragRef.current.scrollTop - (event.clientY - dragRef.current.startY)
+  }
+
+  function onPointerUp(event) {
+    if (!dragRef.current.dragging) return
+    dragRef.current.dragging = false
+    if (scrollRef.current?.hasPointerCapture(event.pointerId)) {
+      scrollRef.current.releasePointerCapture(event.pointerId)
+    }
+  }
+
   return (
-    <div className="h-full overflow-y-auto p-6">
+    <div
+      ref={scrollRef}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerUp}
+      className="h-full touch-none select-none overflow-y-auto p-6 cursor-grab active:cursor-grabbing"
+    >
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
       <span></span>
         {steps.length > 0 && (
