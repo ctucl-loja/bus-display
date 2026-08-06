@@ -8,7 +8,7 @@ const LOJA_COORDS = [-3.9931, -79.2042]
 
 const TILE_URLS = {
   dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-  light: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+  light: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
 }
 
 const checkpointIcon = L.icon({
