@@ -1,48 +1,80 @@
 import { NavLink } from 'react-router-dom'
 import { useEcuadorClock } from '../hooks/useEcuadorClock.js'
+import { useTheme } from '../context/ThemeContext.jsx'
 
 const NAV_LINKS = [
   { to: '/', label: 'Home' },
   { to: '/itinerary', label: 'Itinerario' },
 ]
 
+function SunIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" {...props}>
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+    </svg>
+  )
+}
+
+function MoonIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z" />
+    </svg>
+  )
+}
+
 function Navbar() {
   const { date, time } = useEcuadorClock()
+  const { theme, toggleTheme } = useTheme()
 
   return (
-    <header className="flex h-[70px] shrink-0 items-center justify-between border-b border-cyan-500/20 bg-slate-900/80 px-6 backdrop-blur-sm">
+    <header className="flex h-[70px] shrink-0 items-center justify-between border-b border-slate-200 bg-white/80 px-6 backdrop-blur-sm dark:border-cyan-500/20 dark:bg-slate-900/80">
       <div className="flex items-center gap-3">
-        <div className="flex p-2 items-center justify-center rounded-lg bg-cyan-500/10 text-sm font-bold text-cyan-400 ring-1 ring-cyan-400/40">
-          SIMTRA
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-cyan-50 text-sm font-bold text-cyan-600 ring-1 ring-cyan-500/40 dark:bg-cyan-500/10 dark:text-cyan-400 dark:ring-cyan-400/40">
+          UT
         </div>
-        
+        <span className="text-lg font-semibold tracking-wide text-slate-900 dark:text-slate-100">
+          CTUCL <span className="text-cyan-600 dark:text-cyan-400">DISPLAY</span>
+        </span>
       </div>
 
-      <div className="hidden md:flex flex-row gap-4">
-        <span className="font-mono text-xl font-bold tabular-nums tracking-wider text-cyan-400">
+      <div className="hidden flex-col items-center leading-tight md:flex">
+        <span className="font-mono text-xl font-bold tabular-nums tracking-wider text-cyan-600 dark:text-cyan-400">
           {time}
         </span>
-        <span className="text-xl font-bold font-mono text-slate-100">{date}</span>
+        <span className="text-xs text-slate-500 dark:text-slate-400">{date}</span>
       </div>
 
-      <nav className="flex items-center gap-1">
-        {NAV_LINKS.map(({ to, label }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={to === '/'}
-            className={({ isActive }) =>
-              `rounded-md px-4 py-2 text-sm font-medium transition-colors ${
-                isActive
-                  ? 'bg-cyan-500/10 text-cyan-400 ring-1 ring-cyan-400/30'
-                  : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100'
-              }`
-            }
-          >
-            {label}
-          </NavLink>
-        ))}
-      </nav>
+      <div className="flex items-center gap-1">
+        <nav className="flex items-center gap-1">
+          {NAV_LINKS.map(({ to, label }) => (
+            <NavLink
+              key={to}
+              to={to}
+              end={to === '/'}
+              className={({ isActive }) =>
+                `rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+                  isActive
+                    ? 'bg-cyan-50 text-cyan-700 ring-1 ring-cyan-500/30 dark:bg-cyan-500/10 dark:text-cyan-400 dark:ring-cyan-400/30'
+                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100'
+                }`
+              }
+            >
+              {label}
+            </NavLink>
+          ))}
+        </nav>
+
+        <button
+          type="button"
+          onClick={toggleTheme}
+          aria-label={theme === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'}
+          className="ml-2 flex h-9 w-9 items-center justify-center rounded-md text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+        >
+          {theme === 'dark' ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
+        </button>
+      </div>
     </header>
   )
 }
