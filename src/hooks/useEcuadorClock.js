@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react'
-
-const TIME_ZONE = 'America/Guayaquil'
+import { ECUADOR_TIME_ZONE } from '../utils/ecuadorTime.js'
 
 function formatDate(date) {
   const formatted = date.toLocaleDateString('es-EC', {
-    timeZone: TIME_ZONE,
+    timeZone: ECUADOR_TIME_ZONE,
     weekday: 'long',
     year: 'numeric',
     month: 'long',
@@ -15,7 +14,7 @@ function formatDate(date) {
 
 function formatTime(date) {
   return date.toLocaleTimeString('es-EC', {
-    timeZone: TIME_ZONE,
+    timeZone: ECUADOR_TIME_ZONE,
     hour12: false,
     hour: '2-digit',
     minute: '2-digit',
