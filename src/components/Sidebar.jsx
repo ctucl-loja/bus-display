@@ -15,21 +15,21 @@ function Sidebar({ status, currentStep, current, next }) {
         {status === 'error' && <p className="text-sm text-red-600 dark:text-red-400">No se pudo cargar el itinerario</p>}
         {status === 'loading' && <p className="text-sm text-slate-500 dark:text-slate-400">Cargando itinerario…</p>}
         {currentStep && (
-          <p className="mt-1 text-sm text-slate-700 dark:text-slate-100">
+          <p className="mt-1 text-xl text-slate-700 dark:text-slate-100">
             (L{currentStep.line.number}) [{currentStep.line.name}] : {currentStep.line.start_route} - {currentStep.line.end_route}
           </p>
         )}
       </InfoCard>
 
       <InfoCard title="Punto actual">
-        <p className="text-sm text-slate-700 dark:text-slate-100">{current?.point.name ?? '—'}</p>
+        <p className="text-xl text-slate-700 dark:text-slate-100">{current?.point.name ?? '—'}</p>
         <p className="mt-1 text-xl font-bold text-amber-600 dark:text-amber-400">
           {current?.time_calculated ?? '--:--:--'}
         </p>
       </InfoCard>
 
       <InfoCard title="Siguiente punto">
-        <p className="text-sm text-slate-700 dark:text-slate-100">{next?.point.name ?? 'Sin más puntos'}</p>
+        <p className="text-xl text-slate-700 dark:text-slate-100">{next?.point.name ?? 'Sin más puntos'}</p>
         <p className="mt-1 text-xl font-bold text-amber-600 dark:text-amber-400">
           {next?.time_calculated ?? '--:--:--'}
         </p>

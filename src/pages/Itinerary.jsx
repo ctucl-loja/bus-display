@@ -18,8 +18,7 @@ function Itinerary() {
   return (
     <div className="h-full overflow-y-auto p-6">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Itinerario</h1>
-
+      <span></span>
         {steps.length > 0 && (
           <div className="flex items-center gap-3">
             <button
