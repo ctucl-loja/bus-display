@@ -1,63 +1,97 @@
-const ITINERARY_ROWS = [
-  { id: 1, linea: 'L18', bus: 'BUS-021', punto: 'Terminal Norte', hora: '08:15', estado: 'En Ruta' },
-  { id: 2, linea: 'L18', bus: 'BUS-021', punto: 'Parada Central', hora: '08:24', estado: 'En Ruta' },
-  { id: 3, linea: 'L05', bus: 'BUS-013', punto: 'Terminal Sur', hora: '08:30', estado: 'A Tiempo' },
-  { id: 4, linea: 'L05', bus: 'BUS-013', punto: 'Av. Universitaria', hora: '08:41', estado: 'Retrasado' },
-  { id: 5, linea: 'L02', bus: 'BUS-007', punto: 'Plaza Central', hora: '08:45', estado: 'En Ruta' },
-  { id: 6, linea: 'L18', bus: 'BUS-021', punto: 'Terminal Norte', hora: '08:55', estado: 'A Tiempo' },
-  { id: 7, linea: 'L09', bus: 'BUS-030', punto: 'Mercado Mayorista', hora: '09:02', estado: 'Detenido' },
-  { id: 8, linea: 'L02', bus: 'BUS-007', punto: 'Hospital Regional', hora: '09:10', estado: 'En Ruta' },
-  { id: 9, linea: 'L05', bus: 'BUS-013', punto: 'Terminal Sur', hora: '09:18', estado: 'Retrasado' },
-  { id: 10, linea: 'L09', bus: 'BUS-030', punto: 'Parque Central', hora: '09:25', estado: 'A Tiempo' },
-]
-
-const STATUS_STYLES = {
-  'En Ruta': 'bg-cyan-500/10 text-cyan-400 ring-1 ring-cyan-400/30',
-  'A Tiempo': 'bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-400/30',
-  Retrasado: 'bg-amber-500/10 text-amber-400 ring-1 ring-amber-400/30',
-  Detenido: 'bg-red-500/10 text-red-400 ring-1 ring-red-400/30',
-}
+import { useState } from 'react'
+import { useDispatch } from '../hooks/useDispatch.js'
 
 function Itinerary() {
+  const { steps, status } = useDispatch()
+  const [index, setIndex] = useState(0)
+
+  const step = steps[index]
+
+  function goPrev() {
+    setIndex((i) => Math.max(i - 1, 0))
+  }
+
+  function goNext() {
+    setIndex((i) => Math.min(i + 1, steps.length - 1))
+  }
+
   return (
     <div className="h-full overflow-y-auto p-6">
-      <h1 className="mb-6 text-2xl font-semibold text-slate-100">Itinerary</h1>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+        <h1 className="text-2xl font-semibold text-slate-100">Itinerario</h1>
 
-      <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900/60 shadow-lg shadow-black/40">
-        <table className="w-full text-left text-sm">
-          <thead>
-            <tr className="border-b border-slate-800 text-xs uppercase tracking-wide text-cyan-400/80">
-              <th className="px-4 py-3 font-medium">ID</th>
-              <th className="px-4 py-3 font-medium">Línea</th>
-              <th className="px-4 py-3 font-medium">Bus</th>
-              <th className="px-4 py-3 font-medium">Punto de Control</th>
-              <th className="px-4 py-3 font-medium">Hora</th>
-              <th className="px-4 py-3 font-medium">Estado</th>
-            </tr>
-          </thead>
-          <tbody>
-            {ITINERARY_ROWS.map((row) => (
-              <tr
-                key={row.id}
-                className="border-b border-slate-800/60 last:border-0 hover:bg-slate-800/40"
-              >
-                <td className="px-4 py-3 text-slate-400">{row.id}</td>
-                <td className="px-4 py-3 text-slate-100">{row.linea}</td>
-                <td className="px-4 py-3 text-slate-100">{row.bus}</td>
-                <td className="px-4 py-3 text-slate-100">{row.punto}</td>
-                <td className="px-4 py-3 text-slate-400">{row.hora}</td>
-                <td className="px-4 py-3">
-                  <span
-                    className={`rounded-full px-3 py-1 text-xs font-medium ${STATUS_STYLES[row.estado]}`}
-                  >
-                    {row.estado}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        {steps.length > 0 && (
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={goPrev}
+              disabled={index === 0}
+              className="rounded-md border border-slate-700 px-3 py-1.5 text-sm text-slate-300 transition-colors hover:bg-slate-800 disabled:opacity-40 disabled:hover:bg-transparent"
+            >
+              ← Anterior
+            </button>
+            <span className="text-sm text-slate-400">
+              Tramo {index + 1} de {steps.length}
+            </span>
+            <button
+              type="button"
+              onClick={goNext}
+              disabled={index === steps.length - 1}
+              className="rounded-md border border-slate-700 px-3 py-1.5 text-sm text-slate-300 transition-colors hover:bg-slate-800 disabled:opacity-40 disabled:hover:bg-transparent"
+            >
+              Siguiente →
+            </button>
+          </div>
+        )}
       </div>
+
+      {status === 'loading' && <p className="text-sm text-slate-400">Cargando itinerario…</p>}
+      {status === 'error' && <p className="text-sm text-red-400">No se pudo cargar el itinerario</p>}
+
+      {step && (
+        <>
+          <div className="mb-4 rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+            <p className="text-lg font-semibold text-cyan-400">
+               (L{step.line.number}) [{step.line.name}] : {step.line.start_route} - {step.line.end_route}
+            </p>
+            <p className="text-sm text-slate-400">
+              {step.start_schedule} - {step.end_schedule}
+            </p>
+          </div>
+
+          <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900/60 shadow-lg shadow-black/40">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-slate-800 text-xs uppercase tracking-wide text-cyan-400/80">
+                  <th className="px-4 py-3 font-medium">#</th>
+                  <th className="px-4 py-3 font-medium">Punto de Control</th>
+                  <th className="px-4 py-3 font-medium">Hora Calculada</th>
+                  <th className="px-4 py-3 font-medium">Hora Reportada</th>
+                </tr>
+              </thead>
+              <tbody>
+                {step.checkpoints.map((checkpoint) => (
+                  <tr
+                    key={checkpoint.id}
+                    className="border-b border-slate-800/60 last:border-0 hover:bg-slate-800/40"
+                  >
+                    <td className="px-4 py-3 text-slate-400">{checkpoint.order}</td>
+                    <td className="px-4 py-3 text-slate-100">{checkpoint.point.name}</td>
+                    <td className="px-4 py-3 text-slate-100">{checkpoint.time_calculated}</td>
+                    <td className="px-4 py-3">
+                      {checkpoint.time_reported === '00:00:00' ? (
+                        <span className="text-slate-500">Sin reportar</span>
+                      ) : (
+                        <span className="text-emerald-400">{checkpoint.time_reported}</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
     </div>
   )
 }

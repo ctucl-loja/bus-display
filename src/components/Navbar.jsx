@@ -3,7 +3,7 @@ import { useEcuadorClock } from '../hooks/useEcuadorClock.js'
 
 const NAV_LINKS = [
   { to: '/', label: 'Home' },
-  { to: '/itinerary', label: 'Itinerary' },
+  { to: '/itinerary', label: 'Itinerario' },
 ]
 
 function Navbar() {

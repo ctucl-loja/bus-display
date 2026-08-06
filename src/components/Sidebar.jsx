@@ -16,7 +16,7 @@ function Sidebar({ status, currentStep, current, next }) {
         {status === 'loading' && <p className="text-sm text-slate-400">Cargando itinerario…</p>}
         {currentStep && (
           <p className="mt-1 text-sm text-slate-100">
-            ({currentStep.line.name}) : {currentStep.line.start_route} - {currentStep.line.end_route}
+            (L{currentStep.line.number}) [{currentStep.line.name}] : {currentStep.line.start_route} - {currentStep.line.end_route}
           </p>
         )}
       </InfoCard>
