@@ -4,7 +4,7 @@ import { useVehicle } from '../hooks/useVehicle.js'
 function Sidebar({ status, currentStep, current, next }) {
   const { vehicle, status: vehicleStatus } = useVehicle()
   return (
-    <div className="flex h-full flex-col gap-4 overflow-y-auto rounded-xl border border-slate-200 bg-white/60 p-4 shadow-lg shadow-slate-200/40 dark:border-slate-800 dark:bg-slate-900/60 dark:shadow-black/40">
+    <div className="flex h-full font-bold flex-col gap-4 overflow-y-auto rounded-xl border border-slate-200 bg-white/60 p-4 shadow-lg shadow-slate-200/40 dark:border-slate-800 dark:bg-slate-900/60 dark:shadow-black/40">
       <InfoCard title="Línea">
         {status === 'error' && <p className="text-sm text-red-600 dark:text-red-400">No se pudo cargar el itinerario</p>}
         {status === 'loading' && <p className="text-sm text-slate-500 dark:text-slate-400">Cargando itinerario…</p>}
