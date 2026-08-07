@@ -29,17 +29,17 @@ function Navbar() {
   const { theme, toggleTheme } = useTheme()
 
   return (
-    <header className="flex h-[70px] shrink-0 items-center justify-between border-b border-slate-200 bg-white/80 px-6 backdrop-blur-sm dark:border-cyan-500/20 dark:bg-slate-900/80">
+    <header className="flex h-[120px] shrink-0 items-center justify-between border-b border-slate-200 bg-white/80 px-6 backdrop-blur-sm dark:border-cyan-500/20 dark:bg-slate-900/80">
       <div className="flex items-center gap-3">
    
-         <span className="font-mono text-2xl font-bold tabular-nums tracking-wider text-cyan-600 dark:text-cyan-400">
+         <span className="font-mono text-4xl font-bold tabular-nums tracking-wider text-cyan-600 dark:text-cyan-400">
           {time}
         </span>
       </div>
 
       <div className="hidden flex-row justify-between gap-2 md:flex">
       
-        <span className="text-2xl font-mono  text-slate-800 dark:text-slate-100 ">{date}</span>
+        <span className="text-4xl font-mono  text-slate-800 dark:text-slate-100 ">{date}</span>
          
       </div>
 
@@ -51,7 +51,7 @@ function Navbar() {
               to={to}
               end={to === '/'}
               className={({ isActive }) =>
-                `rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+                `rounded-md px-4 py-4 text-xl font-medium transition-colors ${
                   isActive
                     ? 'bg-cyan-50 text-cyan-700 ring-1 ring-cyan-500/30 dark:bg-cyan-500/10 dark:text-cyan-400 dark:ring-cyan-400/30'
                     : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100'
@@ -67,9 +67,9 @@ function Navbar() {
           type="button"
           onClick={toggleTheme}
           aria-label={theme === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'}
-          className="ml-2 flex h-9 w-9 items-center justify-center rounded-md text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+          className="ml-2 flex h-16 w-16 items-center justify-center rounded-md text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
         >
-          {theme === 'dark' ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
+          {theme === 'dark' ? <SunIcon className="h-12 w-12" /> : <MoonIcon className="h-12 w-12" />}
         </button>
       </div>
     </header>
