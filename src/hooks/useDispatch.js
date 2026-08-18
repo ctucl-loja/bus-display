@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import { fetchDispatch } from '../services/dispatchApi.js'
-import { env } from '../config/env.js'
 import { toISODate } from '../utils/ecuadorTime.js'
 
-const REFRESH_INTERVAL_MS = 5 * 60 * 1000
+const REFRESH_INTERVAL_MS = 60 * 1000
 
-// Trae el itinerario del bus (env.busRegister) para el día actual y lo
-// refresca periódicamente para que siga vigente durante toda la jornada.
+// Trae el itinerario del día desde la API local de simtra-bus-manager y lo
+// refresca periódicamente: el monitor de la RPi va escribiendo el time_reported
+// de cada checkpoint en ese mismo despacho conforme el bus cruza las geocercas.
+// status: 'loading' | 'ready' | 'empty' | 'error'
 export function useDispatch() {
   const [steps, setSteps] = useState([])
   const [status, setStatus] = useState('loading')
@@ -18,10 +19,10 @@ export function useDispatch() {
     async function load() {
       try {
         const date = toISODate(new Date())
-        const result = await fetchDispatch(env.busRegister, date)
+        const result = await fetchDispatch(date)
         if (!cancelled) {
           setSteps(result)
-          setStatus('ready')
+          setStatus(result.length === 0 ? 'empty' : 'ready')
         }
       } catch (err) {
         if (!cancelled) {

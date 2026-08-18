@@ -85,6 +85,9 @@ function Itinerary() {
       </div>
 
       {status === 'loading' && <p className="text-sm text-slate-500 dark:text-slate-400">Cargando itinerario…</p>}
+      {status === 'empty' && (
+        <p className="text-sm text-slate-500 dark:text-slate-400">Sin despacho para hoy</p>
+      )}
       {status === 'error' && <p className="text-sm text-red-600 dark:text-red-400">No se pudo cargar el itinerario</p>}
 
       {step && (

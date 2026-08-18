@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { fetchVehicle } from '../services/vehicleApi.js'
-import { env } from '../config/env.js'
 
-// Datos del vehículo (propietario, placa, cooperativa) para env.busRegister.
+// Datos del vehículo (propietario, placa, cooperativa) desde la API local.
+// status: 'loading' | 'ready' | 'empty' | 'error'
 export function useVehicle() {
   const [vehicle, setVehicle] = useState(null)
   const [status, setStatus] = useState('loading')
@@ -10,11 +10,11 @@ export function useVehicle() {
   useEffect(() => {
     let cancelled = false
 
-    fetchVehicle(env.busRegister)
+    fetchVehicle()
       .then((result) => {
         if (!cancelled) {
           setVehicle(result)
-          setStatus('ready')
+          setStatus(result ? 'ready' : 'empty')
         }
       })
       .catch(() => {

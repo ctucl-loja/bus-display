@@ -8,7 +8,9 @@ function readEnv(key) {
 }
 
 export const env = {
-  backendUrl: readEnv('VITE_BACKEND_URL'),
-  busRegister: readEnv('VITE_BUS_REGISTER'),
-  simtraApiKey: readEnv('VITE_SIMTRA_API_KEY'),
+  // Única dependencia externa de la pantalla: la API local de simtra-bus-manager,
+  // que corre en el mismo dispositivo (Raspberry Pi) y es la que sí habla con el
+  // backend remoto. La pantalla no conoce credenciales ni el número de bus: la
+  // RPi ya está configurada con su propio FAST_API_BUS_REGISTER.
+  localApiUrl: readEnv('VITE_LOCAL_API_URL'),
 }
