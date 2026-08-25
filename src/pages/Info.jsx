@@ -95,13 +95,13 @@ function Logo({ basename, organization }) {
   return (
     // Fondo claro fijo: muchos logotipos vienen con transparencia y texto
     // oscuro, que desaparecería sobre el tema oscuro.
-    <div className="flex h-24 w-full max-w-xs items-center justify-center rounded-lg border border-slate-200 bg-white px-4 dark:border-slate-700">
+   
       <img
         src={source}
         alt={`Logotipo de ${organization}`}
         className="max-h-20 w-auto max-w-full object-contain"
       />
-    </div>
+  
   )
 }
 
