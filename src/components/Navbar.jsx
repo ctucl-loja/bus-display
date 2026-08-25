@@ -17,7 +17,7 @@ function InfoIcon(props) {
 const NAV_LINKS = [
   { to: '/', label: 'Home' },
   { to: '/itinerary', label: 'Itinerario' },
-  { to: '/info', label: 'Información', icon: InfoIcon },
+  { to: '/info', label: 'Info', icon: InfoIcon },
 ]
 
 function SunIcon(props) {
