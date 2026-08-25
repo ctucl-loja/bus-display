@@ -50,12 +50,134 @@ pnpm install
 pnpm dev
 ```
 
-Producción (kiosco en la RPi):
+Producción (kiosco en la RPi): ver [Despliegue en producción](#despliegue-en-producción-servicio-systemd--modo-kiosko) más abajo.
+
+## Despliegue en producción (servicio systemd + modo kiosko)
+
+Esta sección cubre únicamente `bus-display` como programa: compilarlo, dejarlo
+corriendo siempre como servicio, y mostrarlo en pantalla completa en el
+arranque. Asume que `simtra-bus-manager` (API local, monitor, loader) ya está
+levantado por su cuenta, y no entra en configuración de red ni de CORS — eso se
+resuelve aparte, del lado de la infraestructura.
+
+### 1. Compilar
 
 ```bash
-pnpm build
-pnpm preview --host --port 4173
+cd /home/admin/bus-display
+pnpm install
+pnpm run build
 ```
+
+Esto genera `dist/` con los estáticos listos para servir. Repite este paso
+cada vez que actualices el código (`git pull` + `pnpm install` + `pnpm run
+build`) — Vite incrusta las variables `VITE_*` en el JS al compilar, así que
+también hay que repetirlo si cambia `.env`.
+
+### 2. Servicio systemd
+
+Sirve `dist/` con [`serve`](https://www.npmjs.com/package/serve) en el puerto
+4173, escuchando en todas las interfaces. Si Node se instaló con `nvm`, ubica
+primero el binario (systemd no carga tu `.bashrc`, así que necesita la ruta
+completa):
+
+```bash
+NODE_BIN_DIR=$(dirname "$(which node)")
+echo "Usando: $NODE_BIN_DIR"
+```
+
+```bash
+sudo tee /etc/systemd/system/bus-display.service > /dev/null <<EOF
+[Unit]
+Description=Bus Display - servidor estatico
+After=network.target
+
+[Service]
+Type=simple
+User=admin
+WorkingDirectory=/home/admin/bus-display
+Environment=PATH=$NODE_BIN_DIR:/usr/bin:/bin
+ExecStart=$NODE_BIN_DIR/npx --yes serve -s dist -l tcp://0.0.0.0:4173
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+EOF
+```
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now bus-display.service
+sudo systemctl status bus-display.service
+```
+
+`enable` hace que arranque solo en cada boot; `Restart=on-failure` lo revive si
+el proceso muere. Para actualizar tras un cambio de código:
+
+```bash
+cd /home/admin/bus-display && git pull && pnpm install && pnpm run build && sudo systemctl restart bus-display
+```
+
+### 3. Modo kiosko (Chromium a pantalla completa)
+
+Autologin a escritorio, para que arranque sin pedir usuario/contraseña:
+
+```bash
+sudo raspi-config nonint do_boot_behaviour B4
+```
+
+Sin apagado de pantalla por inactividad:
+
+```bash
+sudo raspi-config nonint do_blanking 1
+```
+
+Chromium, si no está instalado:
+
+```bash
+sudo apt update && sudo apt install -y chromium-browser
+```
+
+Autostart de labwc: agrega el bloque de kiosko (espera a que el servicio
+responda, y recién ahí abre Chromium en `--kiosk` contra el propio servidor
+local):
+
+```bash
+mkdir -p ~/.config/labwc
+cp /etc/xdg/labwc/autostart ~/.config/labwc/autostart 2>/dev/null || touch ~/.config/labwc/autostart
+```
+
+```bash
+cat >> ~/.config/labwc/autostart <<'EOF'
+
+# Bus Display - modo kiosko
+(
+  for i in $(seq 1 30); do
+    curl -sf http://localhost:4173 >/dev/null && break
+    sleep 1
+  done
+  CHROME_BIN=$(command -v chromium-browser || command -v chromium)
+  "$CHROME_BIN" --kiosk --noerrdialogs --disable-infobars \
+    --disable-session-crashed-bubble --disable-translate \
+    --check-for-update-interval=31536000 --incognito \
+    http://localhost:4173
+) &
+EOF
+```
+
+> Si `~/.config/labwc/autostart` ya existía de antes con este mismo bloque, no
+> lo agregues dos veces — labwc ejecuta tanto el autostart de sistema como el
+> de usuario, y una barra de tareas o un Chromium duplicados suelen venir de
+> ahí.
+
+Reinicia para aplicar todo:
+
+```bash
+sudo reboot
+```
+
+Al arrancar debería ir directo al escritorio y abrir Chromium en pantalla
+completa sobre `bus-display`.
 
 ## Avisos de llegada
 
