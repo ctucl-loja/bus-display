@@ -1,25 +1,59 @@
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useDispatch } from '../hooks/useDispatch.js'
+import { findCurrentStepIndex, sortStepsBySchedule } from '../utils/itinerary.js'
+import { toEcuadorTime } from '../utils/ecuadorTime.js'
+
+// Tamaños pensados para la pantalla táctil de 7" de la RPi (800x480): texto
+// grande, filas altas y botones con área de toque cómoda. En `lg` (laptop) solo
+// se agrega aire, la jerarquía es la misma.
+const NAV_BUTTON_CLASS =
+  'min-h-14 rounded-lg border border-slate-300 px-5 py-3 text-xl font-medium text-slate-600 transition-colors hover:bg-slate-100 disabled:opacity-40 disabled:hover:bg-transparent dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 lg:px-6 lg:text-2xl'
+
+const CELL_CLASS = 'px-4 py-4 text-xl lg:px-6 lg:text-2xl'
 
 function Itinerary() {
   const { steps, status } = useDispatch()
-  const [index, setIndex] = useState(0)
+
+  // Hora de Ecuador al abrir la vista, tomada una sola vez (inicializador
+  // perezoso): la selección automática queda estable y el tramo no salta solo
+  // mientras el conductor lee la tabla. No se usa un reloj en vivo porque
+  // re-renderizaría la tabla una vez por segundo.
+  const [openedAt] = useState(() => toEcuadorTime(new Date()))
+
+  // null = manda la selección automática. En cuanto el conductor usa
+  // «Anterior»/«Siguiente» manda él, y los refrescos del despacho cada 60 s ya
+  // no mueven el tramo.
+  const [manualIndex, setManualIndex] = useState(null)
+
+  // La posición dentro del arreglo solo es significativa una vez ordenados los
+  // tramos por horario: así «Anterior/Siguiente» avanza cronológicamente y el
+  // índice inicial apunta al tramo correcto aunque la API los devuelva sueltos.
+  const orderedSteps = useMemo(() => sortStepsBySchedule(steps), [steps])
+
+  // El despacho llega de forma asíncrona: esto pasa solo de 0 al tramo que
+  // corresponde a la hora actual en el render en que los tramos aparecen, sin
+  // efectos ni renders extra. Sin tramos, findCurrentStepIndex devuelve -1.
+  const autoIndex = Math.max(findCurrentStepIndex(orderedSteps, openedAt), 0)
+
+  // La cantidad de tramos puede cambiar cuando el monitor recarga el despacho.
+  const lastIndex = Math.max(orderedSteps.length - 1, 0)
+  const safeIndex = Math.min(manualIndex ?? autoIndex, lastIndex)
+  const step = orderedSteps[safeIndex]
 
   const scrollRef = useRef(null)
   const dragRef = useRef({ dragging: false, startX: 0, startY: 0, scrollLeft: 0, scrollTop: 0 })
 
-  const step = steps[index]
-
   function goPrev() {
-    setIndex((i) => Math.max(i - 1, 0))
+    setManualIndex(Math.max(safeIndex - 1, 0))
   }
 
   function goNext() {
-    setIndex((i) => Math.min(i + 1, steps.length - 1))
+    setManualIndex(Math.min(safeIndex + 1, lastIndex))
   }
 
   // Scroll arrastrando (dedo o mouse) en vez de depender del gesto nativo de
-  // touch — útil cuando la pantalla táctil se reporta como mouse.
+  // touch — útil cuando la pantalla táctil se reporta como mouse. Arrastra en
+  // los dos ejes: la tabla puede desbordar tanto a lo alto como a lo ancho.
   function onPointerDown(event) {
     const el = scrollRef.current
     if (!el || event.target.closest('button, a, input, select, textarea')) return
@@ -49,66 +83,70 @@ function Itinerary() {
   }
 
   return (
-    <div
-      ref={scrollRef}
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      onPointerCancel={onPointerUp}
-      className="h-full touch-none select-none overflow-y-auto p-6 cursor-grab active:cursor-grabbing"
-    >
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-      <span></span>
-        {steps.length > 0 && (
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={goPrev}
-              disabled={index === 0}
-              className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-600 transition-colors hover:bg-slate-100 disabled:opacity-40 disabled:hover:bg-transparent dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
-            >
-              ← Anterior
-            </button>
-            <span className="text-sm text-slate-500 dark:text-slate-400">
-              Tramo {index + 1} de {steps.length}
-            </span>
-            <button
-              type="button"
-              onClick={goNext}
-              disabled={index === steps.length - 1}
-              className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-600 transition-colors hover:bg-slate-100 disabled:opacity-40 disabled:hover:bg-transparent dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
-            >
-              Siguiente →
-            </button>
-          </div>
-        )}
-      </div>
-
-      {status === 'loading' && <p className="text-sm text-slate-500 dark:text-slate-400">Cargando itinerario…</p>}
-      {status === 'empty' && (
-        <p className="text-sm text-slate-500 dark:text-slate-400">Sin despacho para hoy</p>
+    // Columna fija: los controles y la línea quedan siempre a la vista y solo
+    // la tabla hace scroll. En 480 px de alto, tener que subir para cambiar de
+    // tramo sería el peor gesto posible para el conductor.
+    <div className="flex h-full flex-col gap-3 p-3 lg:gap-4 lg:p-6">
+      {orderedSteps.length > 0 && (
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-3">
+          <button type="button" onClick={goPrev} disabled={safeIndex === 0} className={NAV_BUTTON_CLASS}>
+            ← Anterior
+          </button>
+          <span className="text-xl text-slate-500 dark:text-slate-400 lg:text-2xl">
+            Tramo {safeIndex + 1} de {orderedSteps.length}
+          </span>
+          <button
+            type="button"
+            onClick={goNext}
+            disabled={safeIndex === lastIndex}
+            className={NAV_BUTTON_CLASS}
+          >
+            Siguiente →
+          </button>
+        </div>
       )}
-      {status === 'error' && <p className="text-sm text-red-600 dark:text-red-400">No se pudo cargar el itinerario</p>}
+
+      {status === 'loading' && (
+        <p className="text-xl text-slate-500 dark:text-slate-400">Cargando itinerario…</p>
+      )}
+      {status === 'empty' && (
+        <p className="text-xl text-slate-500 dark:text-slate-400">Sin despacho para hoy</p>
+      )}
+      {status === 'error' && (
+        <p className="text-xl text-red-600 dark:text-red-400">No se pudo cargar el itinerario</p>
+      )}
 
       {step && (
         <>
-          <div className="mb-4 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/60">
-            <p className="text-lg font-semibold text-cyan-600 dark:text-cyan-400">
-               (L{step.line.number}) [{step.line.name}] : {step.line.start_route} - {step.line.end_route}
+          {/* Línea y horario en una sola fila: en 480 px de alto cada fila que
+              se ahorra arriba es una fila más de tabla visible. */}
+          <div className="flex shrink-0 flex-wrap items-baseline justify-between gap-x-4 rounded-xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-900/60 lg:px-6 lg:py-4">
+            <p className="text-2xl font-semibold text-cyan-600 dark:text-cyan-400 lg:text-3xl">
+              (L{step.line.number}) [{step.line.name}] : {step.line.start_route} - {step.line.end_route}
             </p>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
+            <p className="text-xl tabular-nums text-slate-500 dark:text-slate-400 lg:text-2xl">
               {step.start_schedule} - {step.end_schedule}
             </p>
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-lg shadow-slate-200/40 dark:border-slate-800 dark:bg-slate-900/60 dark:shadow-black/40">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-cyan-600/80 dark:border-slate-800 dark:text-cyan-400/80">
-                  <th className="px-4 py-3 font-medium">#</th>
-                  <th className="px-4 py-3 font-medium">Punto de Control</th>
-                  <th className="px-4 py-3 font-medium">Hora Calculada</th>
-                  <th className="px-4 py-3 font-medium">Hora Reportada</th>
+          {/* Único contenedor con scroll: vertical y horizontal, por arrastre o
+              con la rueda. La tabla no baja de min-w para que las columnas no
+              se aplasten en pantallas angostas. */}
+          <div
+            ref={scrollRef}
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            onPointerCancel={onPointerUp}
+            className="min-h-0 flex-1 cursor-grab touch-none select-none overflow-auto rounded-xl border border-slate-200 bg-white shadow-lg shadow-slate-200/40 active:cursor-grabbing dark:border-slate-800 dark:bg-slate-900/60 dark:shadow-black/40"
+          >
+            <table className="w-full min-w-[42rem] text-left">
+              <thead className="sticky top-0 z-10 bg-white dark:bg-slate-900">
+                <tr className="border-b border-slate-200 text-base uppercase tracking-wide text-cyan-600/80 dark:border-slate-800 dark:text-cyan-400/80 lg:text-lg">
+                  <th className="px-4 py-3 font-medium lg:px-6">#</th>
+                  <th className="px-4 py-3 font-medium lg:px-6">Punto de Control</th>
+                  <th className="whitespace-nowrap px-4 py-3 font-medium lg:px-6">Hora Calculada</th>
+                  <th className="whitespace-nowrap px-4 py-3 font-medium lg:px-6">Hora Reportada</th>
                 </tr>
               </thead>
               <tbody>
@@ -117,14 +155,24 @@ function Itinerary() {
                     key={checkpoint.id}
                     className="border-b border-slate-200/60 last:border-0 hover:bg-slate-100/60 dark:border-slate-800/60 dark:hover:bg-slate-800/40"
                   >
-                    <td className="px-4 py-3 text-slate-500 dark:text-slate-400">{checkpoint.order}</td>
-                    <td className="px-4 py-3 text-slate-700 dark:text-slate-100">{checkpoint.point.name}</td>
-                    <td className="px-4 py-3 text-slate-700 dark:text-slate-100">{checkpoint.time_calculated}</td>
-                    <td className="px-4 py-3">
+                    <td className={`${CELL_CLASS} text-slate-500 dark:text-slate-400`}>
+                      {checkpoint.order}
+                    </td>
+                    <td className={`${CELL_CLASS} font-medium text-slate-700 dark:text-slate-100`}>
+                      {checkpoint.point.name}
+                    </td>
+                    <td
+                      className={`${CELL_CLASS} whitespace-nowrap tabular-nums text-slate-700 dark:text-slate-100`}
+                    >
+                      {checkpoint.time_calculated}
+                    </td>
+                    <td className={`${CELL_CLASS} whitespace-nowrap tabular-nums`}>
                       {checkpoint.time_reported === '00:00:00' ? (
                         <span className="text-slate-400 dark:text-slate-500">Sin reportar</span>
                       ) : (
-                        <span className="text-emerald-600 dark:text-emerald-400">{checkpoint.time_reported}</span>
+                        <span className="text-emerald-600 dark:text-emerald-400">
+                          {checkpoint.time_reported}
+                        </span>
                       )}
                     </td>
                   </tr>

@@ -29,19 +29,41 @@ geocercas. Así la pantalla sigue funcionando sin señal.
 
 ## Configuración
 
+**No hace falta configurar nada para el uso normal.** La pantalla deriva la URL
+de la API local del host desde el que se abrió la página, así que una sola
+compilación sirve tanto para el kiosco de la RPi como para una laptop de la LAN:
+
+```text
+http://localhost:4173      →  API en http://localhost:8000
+http://192.168.1.14:4173   →  API en http://192.168.1.14:8000
+```
+
+Compilar `http://localhost:8000` como URL fija sería lo incorrecto: al abrir la
+pantalla desde la laptop, ese `localhost` sería el de la laptop, donde no hay
+ninguna API.
+
+Si aun así hace falta ajustar algo:
+
 ```bash
 cp .env.example .env
 ```
 
 | Variable | Descripción |
 |---|---|
-| `VITE_LOCAL_API_URL` | URL de la API local de `simtra-bus-manager` (ej. `http://localhost:8000`) |
+| `VITE_LOCAL_API_PORT` | Puerto de la API local. Por defecto `8000`; debe coincidir con el `--port` de uvicorn |
+| `VITE_LOCAL_API_URL` | Escape: URL absoluta y fija. Solo si la API no vive en el mismo host que sirve la pantalla. Ignora la derivación automática |
+
+Vite incrusta las `VITE_*` al compilar, así que cambiar `.env` obliga a repetir
+`pnpm run build`.
 
 No hay credenciales ni número de bus: la RPi ya está configurada con su propio
 `FAST_API_BUS_REGISTER` y es la que autentica contra el backend remoto.
 
 Del lado de `simtra-bus-manager`, `FAST_API_CORS_ORIGINS` controla qué orígenes
-puede usar el navegador (por defecto `*`, suficiente en un equipo aislado).
+puede usar el navegador (por defecto `*`, suficiente en un equipo aislado). Al
+abrir la pantalla desde otro equipo de la LAN el origen cambia
+(`http://<IP_RPI>:4173`), así que si esa variable se restringió a una lista hay
+que incluir ese origen.
 
 ## Ejecución
 
@@ -50,7 +72,66 @@ pnpm install
 pnpm dev
 ```
 
+Para que el servidor de desarrollo también acepte conexiones de la LAN (probar
+desde la laptop contra la RPi, o al revés):
+
+```bash
+pnpm dev:lan
+```
+
+Equivale a `pnpm dev --host 0.0.0.0`. Vite imprime la URL de red al arrancar.
+
 Producción (kiosco en la RPi): ver [Despliegue en producción](#despliegue-en-producción-servicio-systemd--modo-kiosko) más abajo.
+
+## Acceso desde una laptop de la misma LAN
+
+Útil para revisar el itinerario o depurar sin agacharse al tablero del bus. Todo
+ocurre dentro de la red privada del router Teltonika RUT956: **no requiere
+publicar nada en internet ni configurar port forwarding.**
+
+### 1. IP LAN de la Raspberry
+
+En la RPi:
+
+```bash
+hostname -I
+```
+
+O, para ver también la interfaz y la máscara:
+
+```bash
+ip -4 addr show scope global
+```
+
+### 2. Abrir la pantalla desde la laptop
+
+```text
+http://<IP_LAN_DE_LA_RASPBERRY>:4173
+```
+
+El servicio de producción ya escucha en todas las interfaces
+(`serve -s dist -l tcp://0.0.0.0:4173`), y el kiosco local sigue usando
+`http://localhost:4173` sin cambios. La API se resuelve sola: al abrir con la IP
+de la RPi, la pantalla consulta `http://<IP_LAN_DE_LA_RASPBERRY>:8000`.
+
+### 3. Confirmar que ambos equipos están en la misma red
+
+Las dos IP deben caer en la misma subred (mismo prefijo y misma máscara) y no
+estar separadas por VLAN ni por aislamiento de clientes wifi:
+
+```bash
+ping <IP_LAN_DE_LA_RASPBERRY>
+```
+
+```bash
+curl http://<IP_LAN_DE_LA_RASPBERRY>:8000/api/gps/last_position
+```
+
+Si el `ping` responde pero el `curl` no, el problema está en la API
+(`simtra-bus-manager` debe correr con `--host 0.0.0.0`, como en su unidad
+systemd) o en `FAST_API_CORS_ORIGINS`. Si el `ping` tampoco responde, los
+equipos no se ven entre sí: revisar que ambos estén asociados a la misma red del
+RUT956 y que el aislamiento de clientes esté desactivado.
 
 ## Despliegue en producción (servicio systemd + modo kiosko)
 
@@ -249,3 +330,10 @@ Constantes: `POLL_INTERVAL_MS` (1500 ms) en el hook y
 |---|---|
 | `/` | Mapa con la posición en vivo del bus y los puntos de control del tramo + panel de línea, punto actual/siguiente y vehículo |
 | `/itinerary` | Tabla del tramo: hora calculada vs hora reportada, navegable entre tramos |
+
+Al abrir `/itinerary` se selecciona solo el tramo que corresponde a la hora de
+Ecuador (el que contiene la hora actual; si ninguno, el próximo que aún no
+empieza; si ya terminaron todos, el último). A partir de ahí manda el conductor:
+usar «Anterior»/«Siguiente» fija la selección y los refrescos del despacho ya no
+la mueven.
+
