@@ -99,7 +99,7 @@ function Logo({ basename, organization }) {
       <img
         src={source}
         alt={`Logotipo de ${organization}`}
-        className="max-h-20 w-auto max-w-full object-contain"
+        className="max-h-120 w-auto max-w-full object-contain"
       />
   
   )
