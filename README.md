@@ -26,6 +26,7 @@ geocercas. Así la pantalla sigue funcionando sin señal.
 | Vehículo | `GET /api/vehicle` | cacheado por `bus_monitor.py` |
 | Posición del bus | `GET /api/gps/last_position` | escrita por el receptor GPS, consultada cada 3 s |
 | Llegadas a puntos de control | `GET /api/events?event_type=checkpoint_arrival&after_id=N` | emitidas por `bus_monitor.py`, consultadas cada 1,5 s |
+| Conectividad del equipo | `GET /api/system/network` | leída del sistema por la RPi, consultada cada 30 s |
 
 ## Configuración
 
@@ -82,6 +83,16 @@ pnpm dev:lan
 Equivale a `pnpm dev --host 0.0.0.0`. Vite imprime la URL de red al arrancar.
 
 Producción (kiosco en la RPi): ver [Despliegue en producción](#despliegue-en-producción-servicio-systemd--modo-kiosko) más abajo.
+
+## Tests
+
+Funciones puras (parsing de horarios, selección de tramo, normalización de las
+respuestas de la API, formato de diferencias) con el runner de Node, sin
+dependencias nuevas:
+
+```bash
+pnpm test
+```
 
 ## Acceso desde una laptop de la misma LAN
 
@@ -329,6 +340,7 @@ Constantes: `POLL_INTERVAL_MS` (1500 ms) en el hook y
 | Ruta | Pantalla |
 |---|---|
 | `/` | Mapa con la posición en vivo del bus y los puntos de control del tramo + panel de línea, punto actual/siguiente y vehículo |
+| `/info` | Vista informativa: origen del sistema, logotipos, contacto y conectividad del equipo |
 | `/itinerary` | Tabla del tramo: hora calculada vs hora reportada, navegable entre tramos |
 
 Al abrir `/itinerary` se selecciona solo el tramo que corresponde a la hora de
@@ -337,3 +349,60 @@ empieza; si ya terminaron todos, el último). A partir de ahí manda el conducto
 usar «Anterior»/«Siguiente» fija la selección y los refrescos del despacho ya no
 la mueven.
 
+---
+
+## Vista `/info`
+
+Pantalla informativa accesible desde el navbar. Muestra, en este orden: título,
+descripción institucional, los dos logotipos, datos de contacto y la
+conectividad del equipo.
+
+### Modo kiosco
+
+La vista es **enteramente inerte**. Nada de lo que hay en ella puede sacar a
+Chromium del modo kiosco:
+
+- no hay ningún `<a>` dentro de la vista;
+- no hay `mailto:`, `tel:` ni URLs enlazadas;
+- no hay `target="_blank"`, botones de copiar, códigos QR ni manejadores de clic;
+- los logotipos son imágenes sin enlace;
+- tocar el correo, el teléfono o el sitio web **no produce ninguna acción**.
+
+Los únicos elementos que navegan son los enlaces del navbar, y lo hacen por
+React Router dentro de la misma aplicación. `index.html` incluye además
+`format-detection` para que el navegador no convierta el teléfono o el correo en
+enlaces por su cuenta.
+
+### Conectividad del dispositivo
+
+La información describe **la Raspberry Pi**, no el equipo desde el que se abre
+la pantalla: si abres la interfaz desde una laptop, sigues viendo la red de la
+RPi. El navegador no puede consultar el SSID ni las interfaces del sistema, así
+que el dato viene de `GET /api/system/network` (ver el README de
+`simtra-bus-manager` para el contrato completo).
+
+Se muestran todas las conexiones activas — si Wi-Fi y Ethernet lo están, ambas.
+Estados posibles en pantalla:
+
+| Situación | Texto |
+|---|---|
+| Consultando | «Consultando información de red…» |
+| Con conexiones | una fila por conexión, con tipo, red (solo Wi-Fi), interfaz e IP |
+| `disconnected` | «Sin conexión de red detectada» |
+| `unavailable` | «Información de red no disponible» |
+| Fallo transitorio | se conserva la última información válida + «No se pudo actualizar la información de red» |
+
+Esta vista solo informa de interfaces y direcciones locales; **no comprueba si
+hay acceso a internet**, que es una cosa distinta de estar conectado a una red.
+
+### Logotipos
+
+```text
+src/assets/logos/consorcio-ciudad-loja.png
+src/assets/logos/mecdevs.png
+```
+
+Se aceptan `.png`, `.jpg`, `.jpeg`, `.svg` y `.webp`; solo importa el nombre
+base. Se descubren con `import.meta.glob`, así que **la aplicación compila
+igual mientras falten**: en su lugar aparece un recuadro discreto con el nombre
+de la organización. Basta con dejar los archivos y recompilar.

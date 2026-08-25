@@ -3,6 +3,8 @@
 // La pantalla NO calcula puntualidad: usa `difference_seconds` tal como lo
 // envía bus_monitor.py, para que ambos sistemas hablen de la misma marcación.
 
+import { finiteNumber } from './values.js'
+
 export const ARRIVAL_STATUS = {
   ON_TIME: 'ON_TIME',
   EARLY: 'EARLY',
@@ -23,13 +25,22 @@ export const ARRIVAL_SIGNS = {
   [ARRIVAL_STATUS.LATE]: '+',
 }
 
-/** "18 s" · "2 min 15 s" · "1 min 05 s" (siempre en valor absoluto). */
+/**
+ * "18 s" · "2 min 15 s" · "1 min 05 s" (siempre en valor absoluto).
+ *
+ * Devuelve null si la diferencia no es un número utilizable. Antes se mostraba
+ * "0 s", que en esta pantalla significa "llegó exacto" — justo lo contrario de
+ * "no se sabe".
+ */
 export function formatDifference(seconds) {
-  const total = Math.abs(Math.round(seconds ?? 0))
-  if (total < 60) return `${total} s`
+  const total = finiteNumber(seconds)
+  if (total === null) return null
 
-  const minutes = Math.floor(total / 60)
-  const rest = total % 60
+  const absolute = Math.abs(Math.round(total))
+  if (absolute < 60) return `${absolute} s`
+
+  const minutes = Math.floor(absolute / 60)
+  const rest = absolute % 60
   return `${minutes} min ${String(rest).padStart(2, '0')} s`
 }
 

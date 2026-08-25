@@ -1,24 +1,10 @@
 import { env } from '../config/env.js'
+import { fetchJson } from './http.js'
+import { normalizeGpsPosition } from './normalize.js'
 
 // GET /api/gps/last_position -> última lectura del GPS guardada en la RPi.
-// Devuelve null mientras el receptor todavía no ha reportado ninguna posición.
+// Devuelve null mientras el receptor no haya reportado una posición utilizable.
 export async function fetchLastPosition() {
-  const url = `${env.localApiUrl}/api/gps/last_position`
-
-  const response = await fetch(url)
-
-  if (!response.ok) {
-    throw new Error(`No se pudo obtener la posición GPS (HTTP ${response.status})`)
-  }
-
-  const data = await response.json()
-
-  if (!data) return null
-
-  return {
-    latitude: Number(data.latitude),
-    longitude: Number(data.longitude),
-    speed: data.speed == null ? null : Number(data.speed),
-    timestamp: data.timestamp,
-  }
+  const data = await fetchJson(`${env.localApiUrl}/api/gps/last_position`, 'la posición GPS')
+  return normalizeGpsPosition(data)
 }

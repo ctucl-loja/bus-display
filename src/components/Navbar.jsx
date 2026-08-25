@@ -2,9 +2,22 @@ import { NavLink } from 'react-router-dom'
 import { useEcuadorClock } from '../hooks/useEcuadorClock.js'
 import { useTheme } from '../context/ThemeContext.jsx'
 
+function InfoIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 16v-5" />
+      <path d="M12 7.5h.01" />
+    </svg>
+  )
+}
+
+// `icon` es opcional: solo Información lo lleva. Todos comparten el mismo
+// estilo y el mismo estado activo.
 const NAV_LINKS = [
   { to: '/', label: 'Home' },
   { to: '/itinerary', label: 'Itinerario' },
+  { to: '/info', label: 'Información', icon: InfoIcon },
 ]
 
 function SunIcon(props) {
@@ -37,27 +50,29 @@ function Navbar() {
         </span>
       </div>
 
-      <div className="hidden flex-row justify-between gap-2 md:flex">
-      
-        <span className="text-4xl font-mono  text-slate-800 dark:text-slate-100 ">{date}</span>
-         
+      {/* La fecha se oculta por debajo de `lg`: en la pantalla de 7" (800 px)
+          no cabe junto al reloj y los tres enlaces, y provocaba desborde
+          horizontal. El reloj, que es lo que el conductor mira, siempre queda. */}
+      <div className="hidden flex-row justify-between gap-2 lg:flex">
+        <span className="font-mono text-4xl text-slate-800 dark:text-slate-100">{date}</span>
       </div>
 
       <div className="flex items-center gap-1">
         <nav className="flex items-center gap-1">
-          {NAV_LINKS.map(({ to, label }) => (
+          {NAV_LINKS.map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
               to={to}
               end={to === '/'}
               className={({ isActive }) =>
-                `rounded-md px-4 py-4 text-xl font-medium transition-colors ${
+                `flex min-h-14 items-center gap-2 rounded-md px-4 py-4 text-xl font-medium transition-colors ${
                   isActive
                     ? 'bg-cyan-50 text-cyan-700 ring-1 ring-cyan-500/30 dark:bg-cyan-500/10 dark:text-cyan-400 dark:ring-cyan-400/30'
                     : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100'
                 }`
               }
             >
+              {Icon && <Icon className="h-7 w-7 shrink-0" />}
               {label}
             </NavLink>
           ))}

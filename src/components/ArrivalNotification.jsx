@@ -40,16 +40,20 @@ const NEUTRAL = { border: 'border-slate-400', accent: 'text-slate-600 dark:text-
  * Solo presenta: la puntualidad viene ya calculada por bus_monitor.py.
  */
 function ArrivalNotification({ event, onClose }) {
-  const payload = event.payload ?? {}
+  const payload = event?.payload ?? {}
   const status = payload.arrival_status
   const style = STYLES[status] ?? NEUTRAL
-  const label = ARRIVAL_LABELS[status]
+  // Un estado desconocido (o ausente, cuando el checkpoint no traía hora
+  // programada) no se traduce a "A TIEMPO": se avisa de la llegada sin afirmar
+  // una puntualidad que el monitor no calculó.
+  const label = ARRIVAL_LABELS[status] ?? 'LLEGADA REGISTRADA'
+  const difference = formatDifference(payload.difference_seconds)
 
   // El temporizador se reinicia con cada evento nuevo (clave: event.id).
   useEffect(() => {
     const id = setTimeout(onClose, ARRIVAL_NOTIFICATION_DURATION)
     return () => clearTimeout(id)
-  }, [event.id, onClose])
+  }, [event?.id, onClose])
 
   return (
     <div
@@ -64,17 +68,15 @@ function ArrivalNotification({ event, onClose }) {
           {payload.point_name ?? 'Punto de control'}
         </p>
 
-        {label && (
-          <p className={`mt-2 flex flex-wrap items-baseline gap-x-3 text-4xl font-bold ${style.accent}`}>
-            <span aria-hidden="true">{ARRIVAL_SIGNS[status]}</span>
-            <span>{label}</span>
-            {status !== ARRIVAL_STATUS.ON_TIME && (
-              <span className="text-3xl font-semibold">
-                {formatDifference(payload.difference_seconds)}
-              </span>
-            )}
-          </p>
-        )}
+        <p className={`mt-2 flex flex-wrap items-baseline gap-x-3 text-4xl font-bold ${style.accent}`}>
+          {ARRIVAL_SIGNS[status] && <span aria-hidden="true">{ARRIVAL_SIGNS[status]}</span>}
+          <span>{label}</span>
+          {/* La diferencia solo se muestra si se conoce y aporta algo: en
+              ON_TIME es ruido, y sin dato sería inventarla. */}
+          {status !== ARRIVAL_STATUS.ON_TIME && difference && (
+            <span className="text-3xl font-semibold">{difference}</span>
+          )}
+        </p>
 
         <dl className="mt-4 flex gap-10 text-xl">
           <div>

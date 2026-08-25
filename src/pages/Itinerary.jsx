@@ -1,7 +1,8 @@
 import { useMemo, useRef, useState } from 'react'
 import { useDispatch } from '../hooks/useDispatch.js'
-import { findCurrentStepIndex, sortStepsBySchedule } from '../utils/itinerary.js'
+import { clampStepIndex, findCurrentStepIndex, sortStepsBySchedule } from '../utils/itinerary.js'
 import { toEcuadorTime } from '../utils/ecuadorTime.js'
+import { describeLine } from '../utils/line.js'
 
 // Tamaños pensados para la pantalla táctil de 7" de la RPi (800x480): texto
 // grande, filas altas y botones con área de toque cómoda. En `lg` (laptop) solo
@@ -35,10 +36,11 @@ function Itinerary() {
   // efectos ni renders extra. Sin tramos, findCurrentStepIndex devuelve -1.
   const autoIndex = Math.max(findCurrentStepIndex(orderedSteps, openedAt), 0)
 
-  // La cantidad de tramos puede cambiar cuando el monitor recarga el despacho.
+  // La cantidad de tramos puede cambiar cuando el monitor recarga el despacho:
+  // el índice se acota siempre para que la selección no quede fuera de rango.
   const lastIndex = Math.max(orderedSteps.length - 1, 0)
-  const safeIndex = Math.min(manualIndex ?? autoIndex, lastIndex)
-  const step = orderedSteps[safeIndex]
+  const safeIndex = clampStepIndex(manualIndex ?? autoIndex, orderedSteps.length)
+  const step = orderedSteps[safeIndex] ?? null
 
   const scrollRef = useRef(null)
   const dragRef = useRef({ dragging: false, startX: 0, startY: 0, scrollLeft: 0, scrollTop: 0 })
@@ -122,10 +124,12 @@ function Itinerary() {
               se ahorra arriba es una fila más de tabla visible. */}
           <div className="flex shrink-0 flex-wrap items-baseline justify-between gap-x-4 rounded-xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-900/60 lg:px-6 lg:py-4">
             <p className="text-2xl font-semibold text-cyan-600 dark:text-cyan-400 lg:text-3xl">
-              (L{step.line.number}) [{step.line.name}] : {step.line.start_route} - {step.line.end_route}
+              {describeLine(step.line)}
             </p>
             <p className="text-xl tabular-nums text-slate-500 dark:text-slate-400 lg:text-2xl">
-              {step.start_schedule} - {step.end_schedule}
+              {step.start_schedule && step.end_schedule
+                ? `${step.start_schedule} - ${step.end_schedule}`
+                : 'Sin horario'}
             </p>
           </div>
 
@@ -152,22 +156,24 @@ function Itinerary() {
               <tbody>
                 {step.checkpoints.map((checkpoint) => (
                   <tr
-                    key={checkpoint.id}
+                    key={checkpoint.key}
                     className="border-b border-slate-200/60 last:border-0 hover:bg-slate-100/60 dark:border-slate-800/60 dark:hover:bg-slate-800/40"
                   >
                     <td className={`${CELL_CLASS} text-slate-500 dark:text-slate-400`}>
-                      {checkpoint.order}
+                      {checkpoint.order ?? '—'}
                     </td>
                     <td className={`${CELL_CLASS} font-medium text-slate-700 dark:text-slate-100`}>
-                      {checkpoint.point.name}
+                      {checkpoint.point?.name ?? 'Punto sin nombre'}
                     </td>
                     <td
                       className={`${CELL_CLASS} whitespace-nowrap tabular-nums text-slate-700 dark:text-slate-100`}
                     >
-                      {checkpoint.time_calculated}
+                      {checkpoint.time_calculated ?? 'Sin horario'}
                     </td>
                     <td className={`${CELL_CLASS} whitespace-nowrap tabular-nums`}>
-                      {checkpoint.time_reported === '00:00:00' ? (
+                      {/* time_reported ausente y '00:00:00' significan lo mismo:
+                          el monitor todavía no marcó este punto. */}
+                      {!checkpoint.time_reported || checkpoint.time_reported === '00:00:00' ? (
                         <span className="text-slate-400 dark:text-slate-500">Sin reportar</span>
                       ) : (
                         <span className="text-emerald-600 dark:text-emerald-400">

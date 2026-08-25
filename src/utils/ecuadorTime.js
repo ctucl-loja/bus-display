@@ -18,7 +18,22 @@ export function toEcuadorTime(date) {
   })
 }
 
+// 'HH:MM:SS' (o 'HH:MM') -> segundos desde medianoche, o null si no es un
+// horario utilizable. Devolver null y no NaN es deliberado: NaN se propaga en
+// silencio por cada comparación y termina eligiendo el tramo equivocado.
+const TIME_PATTERN = /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/
+
 export function timeToSeconds(hhmmss) {
-  const [h, m, s] = hhmmss.split(':').map(Number)
-  return h * 3600 + m * 60 + (s || 0)
+  if (typeof hhmmss !== 'string') return null
+
+  const match = TIME_PATTERN.exec(hhmmss.trim())
+  if (!match) return null
+
+  const hours = Number(match[1])
+  const minutes = Number(match[2])
+  const seconds = match[3] === undefined ? 0 : Number(match[3])
+
+  if (hours > 23 || minutes > 59 || seconds > 59) return null
+
+  return hours * 3600 + minutes * 60 + seconds
 }

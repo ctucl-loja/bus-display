@@ -1,5 +1,6 @@
 import InfoCard from './InfoCard.jsx'
 import { useVehicle } from '../hooks/useVehicle.js'
+import { describeLine } from '../utils/line.js'
 
 function Sidebar({ status, currentStep, current, next }) {
   const { vehicle, status: vehicleStatus } = useVehicle()
@@ -13,22 +14,26 @@ function Sidebar({ status, currentStep, current, next }) {
         )}
         {currentStep && (
           <p className="mt-1 text-xl text-slate-700 dark:text-slate-100">
-            (L{currentStep.line.number}) [{currentStep.line.name}] : {currentStep.line.start_route} - {currentStep.line.end_route}
+            {describeLine(currentStep.line)}
           </p>
         )}
       </InfoCard>
 
       <InfoCard title="Punto actual">
-        <p className="text-xl font-bold text-slate-700 dark:text-slate-100">{current?.point.name ?? '—'}</p>
+        <p className="text-xl font-bold text-slate-700 dark:text-slate-100">
+          {current?.point?.name ?? '—'}
+        </p>
         <p className="mt-1 text-xl font-bold text-amber-600 dark:text-amber-400">
-          {current?.time_calculated ?? '--:--:--'}
+          {current?.time_calculated ?? 'Sin horario'}
         </p>
       </InfoCard>
 
       <InfoCard title="Siguiente punto">
-        <p className="text-xl font-bold text-slate-700 dark:text-slate-100">{next?.point.name ?? 'Sin más puntos'}</p>
+        <p className="text-xl font-bold text-slate-700 dark:text-slate-100">
+          {next?.point?.name ?? 'Sin más puntos'}
+        </p>
         <p className="mt-1 text-xl font-bold text-amber-600 dark:text-amber-400">
-          {next?.time_calculated ?? '--:--:--'}
+          {next?.time_calculated ?? 'Sin horario'}
         </p>
       </InfoCard>
 
@@ -45,10 +50,10 @@ function Sidebar({ status, currentStep, current, next }) {
         {vehicle && (
           <dl className="grid grid-cols-2 gap-y-1 text-sm">
             <dt className="text-slate-500 dark:text-slate-400">Registro</dt>
-            <dd className="text-right text-slate-700 dark:text-slate-100">{vehicle.register}</dd>
+            <dd className="text-right text-slate-700 dark:text-slate-100">{vehicle.register ?? '—'}</dd>
             <dt className="text-slate-500 dark:text-slate-400">Propietario</dt>
             <dd className="text-right text-slate-700 dark:text-slate-100">
-              {vehicle.user ? `${vehicle.user.name} ${vehicle.user.lastname}` : '—'}
+              {[vehicle.user?.name, vehicle.user?.lastname].filter(Boolean).join(' ') || '—'}
             </dd>
             <dt className="text-slate-500 dark:text-slate-400">Placa</dt>
             <dd className="text-right text-slate-700 dark:text-slate-100">{vehicle.plate ?? '—'}</dd>

@@ -49,9 +49,20 @@ function FollowBus({ latitude, longitude }) {
   return null
 }
 
+// Leaflet lanza (o dibuja en un lugar arbitrario) con coordenadas no finitas,
+// así que se filtra antes de renderizar: un punto sin ubicación utilizable
+// simplemente no se pinta.
+function hasValidCoords(point) {
+  return Number.isFinite(point?.latitude) && Number.isFinite(point?.longitude)
+}
+
 function MapView({ checkpoints = [] }) {
   const { theme } = useTheme()
   const { position, status } = useGpsPosition()
+
+  const drawable = Array.isArray(checkpoints)
+    ? checkpoints.filter((checkpoint) => hasValidCoords(checkpoint?.point))
+    : []
 
   return (
     <MapContainer center={LOJA_COORDS} zoom={18} scrollWheelZoom className="h-full w-full">
@@ -61,28 +72,28 @@ function MapView({ checkpoints = [] }) {
         url={TILE_URLS[theme]}
       />
 
-      {checkpoints.map((checkpoint) => (
+      {drawable.map((checkpoint) => (
         <Marker
-          key={checkpoint.id}
+          key={checkpoint.key ?? checkpoint.id}
           position={[checkpoint.point.latitude, checkpoint.point.longitude]}
           icon={checkpointIcon}
         >
           <Popup>
-            {checkpoint.point.name}
+            {checkpoint.point.name ?? 'Punto sin nombre'}
             <br />
-            {checkpoint.time_calculated}
+            {checkpoint.time_calculated ?? 'Sin horario'}
           </Popup>
         </Marker>
       ))}
 
-      {position && (
+      {hasValidCoords(position) && (
         <>
           <Marker position={[position.latitude, position.longitude]} icon={busIcon} zIndexOffset={1000}>
             <Popup>
               <strong>Posición del bus</strong>
               <br />
               {formatTime(position.timestamp)}
-              {position.speed != null && <> · {position.speed.toFixed(0)} km/h</>}
+              {Number.isFinite(position.speed) && <> · {position.speed.toFixed(0)} km/h</>}
               {status === 'error' && (
                 <>
                   <br />

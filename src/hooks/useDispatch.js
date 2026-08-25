@@ -25,6 +25,9 @@ export function useDispatch() {
           setStatus(result.length === 0 ? 'empty' : 'ready')
         }
       } catch (err) {
+        // No se vacía `steps`: ante un fallo transitorio de la API local es
+        // preferible seguir mostrando el itinerario que ya se tenía, marcando
+        // el estado como 'error'.
         if (!cancelled) {
           setError(err)
           setStatus('error')
