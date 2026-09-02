@@ -35,8 +35,8 @@ de la API local del host desde el que se abrió la página, así que una sola
 compilación sirve tanto para el kiosco de la RPi como para una laptop de la LAN:
 
 ```text
-http://localhost:4173      →  API en http://localhost:8000
-http://192.168.1.14:4173   →  API en http://192.168.1.14:8000
+http://localhost:5173      →  API en http://localhost:8000
+http://192.168.1.14:5173   →  API en http://192.168.1.14:8000
 ```
 
 Compilar `http://localhost:8000` como URL fija sería lo incorrecto: al abrir la
@@ -63,7 +63,7 @@ No hay credenciales ni número de bus: la RPi ya está configurada con su propio
 Del lado de `simtra-bus-manager`, `FAST_API_CORS_ORIGINS` controla qué orígenes
 puede usar el navegador (por defecto `*`, suficiente en un equipo aislado). Al
 abrir la pantalla desde otro equipo de la LAN el origen cambia
-(`http://<IP_RPI>:4173`), así que si esa variable se restringió a una lista hay
+(`http://<IP_RPI>:5173`), así que si esa variable se restringió a una lista hay
 que incluir ese origen.
 
 ## Ejecución
@@ -82,7 +82,7 @@ pnpm dev:lan
 
 Equivale a `pnpm dev --host 0.0.0.0`. Vite imprime la URL de red al arrancar.
 
-Producción (kiosco en la RPi): ver [Despliegue en producción](#despliegue-en-producción-servicio-systemd--modo-kiosko) más abajo.
+Producción (kiosco en la RPi): ver [Despliegue en producción](#despliegue-en-producción-pm2--modo-kiosko) más abajo.
 
 ## Tests
 
@@ -117,12 +117,12 @@ ip -4 addr show scope global
 ### 2. Abrir la pantalla desde la laptop
 
 ```text
-http://<IP_LAN_DE_LA_RASPBERRY>:4173
+http://<IP_LAN_DE_LA_RASPBERRY>:5173
 ```
 
-El servicio de producción ya escucha en todas las interfaces
-(`serve -s dist -l tcp://0.0.0.0:4173`), y el kiosco local sigue usando
-`http://localhost:4173` sin cambios. La API se resuelve sola: al abrir con la IP
+El servicio de producción ya escucha en todas las interfaces —`pm2 serve` toma
+`0.0.0.0` por defecto— y el kiosco local sigue usando `http://localhost:5173`
+sin cambios. La API se resuelve sola: al abrir con la IP
 de la RPi, la pantalla consulta `http://<IP_LAN_DE_LA_RASPBERRY>:8000`.
 
 ### 3. Confirmar que ambos equipos están en la misma red
@@ -144,73 +144,165 @@ systemd) o en `FAST_API_CORS_ORIGINS`. Si el `ping` tampoco responde, los
 equipos no se ven entre sí: revisar que ambos estén asociados a la misma red del
 RUT956 y que el aislamiento de clientes esté desactivado.
 
-## Despliegue en producción (servicio systemd + modo kiosko)
+## Despliegue en producción (PM2 + modo kiosko)
 
-Esta sección cubre únicamente `bus-display` como programa: compilarlo, dejarlo
-corriendo siempre como servicio, y mostrarlo en pantalla completa en el
-arranque. Asume que `simtra-bus-manager` (API local, monitor, loader) ya está
-levantado por su cuenta, y no entra en configuración de red ni de CORS — eso se
-resuelve aparte, del lado de la infraestructura.
+Esta sección cubre únicamente `bus-display` como programa: preparar la
+Raspberry, compilarlo, dejarlo corriendo siempre bajo PM2 y mostrarlo en
+pantalla completa al arrancar. Asume que `simtra-bus-manager` (API local,
+monitor, loader) ya está levantado por su cuenta, y no entra en configuración de
+red ni de CORS — eso se resuelve aparte, del lado de la infraestructura.
 
-### 1. Compilar
+Se hace una sola vez por equipo. Para actualizar la pantalla después, basta el
+paso 7.
+
+### 1. Actualizar el sistema
+
+```bash
+sudo apt update
+```
+
+```bash
+sudo apt upgrade -y
+```
+
+### 2. Node.js 22
+
+Desde el repositorio de NodeSource, que es el que trae una versión al día para
+ARM (la de `apt` suele ir muy por detrás):
+
+```bash
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+```
+
+```bash
+sudo apt install -y nodejs
+```
+
+Comprueba:
+
+```bash
+node -v && npm -v
+```
+
+Deberías ver algo como `v22.x.x` y `10.x.x`. Node 22 es el mínimo para esta
+pantalla: Vite 8 exige Node 20.19+.
+
+### 3. pnpm
+
+Con Node 22 viene Corepack, así que no hace falta instalar pnpm a mano:
+
+```bash
+sudo corepack enable
+```
+
+```bash
+corepack prepare pnpm@latest --activate
+```
+
+Comprueba:
+
+```bash
+pnpm -v
+```
+
+### 4. PM2
+
+```bash
+sudo npm install -g pm2
+```
+
+Comprueba:
+
+```bash
+pm2 -v
+```
+
+### 5. Compilar
 
 ```bash
 cd /home/admin/bus-display
+```
+
+```bash
 pnpm install
+```
+
+```bash
 pnpm run build
 ```
 
-Esto genera `dist/` con los estáticos listos para servir. Repite este paso
-cada vez que actualices el código (`git pull` + `pnpm install` + `pnpm run
-build`) — Vite incrusta las variables `VITE_*` en el JS al compilar, así que
-también hay que repetirlo si cambia `.env`.
+Esto genera `dist/` con los estáticos listos para servir. Vite incrusta las
+variables `VITE_*` en el JS al compilar, así que hay que repetir el build tanto
+si cambia el código como si cambia `.env`.
 
-### 2. Servicio systemd
+### 6. Servir con PM2 y dejarlo persistente
 
-Sirve `dist/` con [`serve`](https://www.npmjs.com/package/serve) en el puerto
-4173, escuchando en todas las interfaces. Si Node se instaló con `nvm`, ubica
-primero el binario (systemd no carga tu `.bashrc`, así que necesita la ruta
-completa):
+PM2 sirve `dist/` como sitio estático, sin necesidad de nginx ni de un servidor
+aparte:
 
 ```bash
-NODE_BIN_DIR=$(dirname "$(which node)")
-echo "Usando: $NODE_BIN_DIR"
+pm2 serve dist 5173 --name bus-display --spa
 ```
+
+Tres detalles de ese comando:
+
+- **`--spa` no es opcional.** Sin él, recargar en `/itinerary` o `/info` devuelve
+  404: son rutas de React Router que no existen como archivos en `dist/`. Con
+  `--spa`, cualquier ruta desconocida entrega `index.html` y el router resuelve
+  desde ahí.
+- **`--name bus-display`** es lo que te deja luego escribir `pm2 restart
+  bus-display` en vez de buscar el id del proceso.
+- **Escucha en `0.0.0.0`**, que es el valor por defecto de `pm2 serve`. Por eso
+  la pantalla se abre igual desde el kiosco local que desde una laptop de la LAN,
+  sin configurar nada más.
+
+Ya deberías poder abrirla:
+
+```text
+http://localhost:5173                      (en la propia RPi)
+http://<IP_LAN_DE_LA_RASPBERRY>:5173       (desde la LAN)
+```
+
+> **Ojo con el puerto en desarrollo.** 5173 es también el puerto por defecto de
+> `pnpm dev`. Si alguna vez levantas el servidor de Vite en la misma Raspberry
+> mientras PM2 está sirviendo, el segundo en arrancar fallará o se irá a otro
+> puerto. En la RPi de producción no debería correr `pnpm dev` nunca.
+
+Para que reviva tras un reinicio hacen falta **dos** cosas distintas, y el orden
+importa:
 
 ```bash
-sudo tee /etc/systemd/system/bus-display.service > /dev/null <<EOF
-[Unit]
-Description=Bus Display - servidor estatico
-After=network.target
-
-[Service]
-Type=simple
-User=admin
-WorkingDirectory=/home/admin/bus-display
-Environment=PATH=$NODE_BIN_DIR:/usr/bin:/bin
-ExecStart=$NODE_BIN_DIR/npx --yes serve -s dist -l tcp://0.0.0.0:4173
-Restart=on-failure
-RestartSec=3
-
-[Install]
-WantedBy=multi-user.target
-EOF
+pm2 startup
 ```
+
+Ese comando no configura nada por sí solo: imprime un `sudo env PATH=...` que
+tienes que copiar y ejecutar. Se parecerá a esto, con tu usuario y tu ruta:
 
 ```bash
-sudo systemctl daemon-reload
-sudo systemctl enable --now bus-display.service
-sudo systemctl status bus-display.service
+sudo env PATH=$PATH:/usr/bin pm2 startup systemd -u admin --hp /home/admin
 ```
 
-`enable` hace que arranque solo en cada boot; `Restart=on-failure` lo revive si
-el proceso muere. Para actualizar tras un cambio de código:
+Eso instala el servicio systemd que arranca PM2 en cada boot. Después, con la
+aplicación ya corriendo, se congela la lista de procesos:
 
 ```bash
-cd /home/admin/bus-display && git pull && pnpm install && pnpm run build && sudo systemctl restart bus-display
+pm2 save
 ```
 
-### 3. Modo kiosko (Chromium a pantalla completa)
+`pm2 save` escribe el estado actual; si lo ejecutas antes de `pm2 serve`,
+guardas una lista vacía y tras el reinicio no arrancará nada. Cada vez que
+cambies qué procesos deben correr, vuelve a ejecutarlo.
+
+### 7. Actualizar tras un cambio de código
+
+```bash
+cd /home/admin/bus-display && git pull && pnpm install && pnpm run build && pm2 restart bus-display
+```
+
+No hace falta repetir `pm2 save`: la lista de procesos no cambia, solo el
+contenido de `dist/`.
+
+### 8. Modo kiosko (Chromium a pantalla completa)
 
 Autologin a escritorio, para que arranque sin pedir usuario/contraseña:
 
@@ -227,12 +319,11 @@ sudo raspi-config nonint do_blanking 1
 Chromium, si no está instalado:
 
 ```bash
-sudo apt update && sudo apt install -y chromium-browser
+sudo apt install -y chromium-browser
 ```
 
-Autostart de labwc: agrega el bloque de kiosko (espera a que el servicio
-responda, y recién ahí abre Chromium en `--kiosk` contra el propio servidor
-local):
+Autostart de labwc: agrega el bloque de kiosko (espera a que PM2 esté sirviendo,
+y recién ahí abre Chromium en `--kiosk` contra el propio servidor local):
 
 ```bash
 mkdir -p ~/.config/labwc
@@ -245,17 +336,31 @@ cat >> ~/.config/labwc/autostart <<'EOF'
 # Bus Display - modo kiosko
 (
   for i in $(seq 1 30); do
-    curl -sf http://localhost:4173 >/dev/null && break
+    curl -sf http://localhost:5173 >/dev/null && break
     sleep 1
   done
   CHROME_BIN=$(command -v chromium-browser || command -v chromium)
   "$CHROME_BIN" --kiosk --noerrdialogs --disable-infobars \
     --disable-session-crashed-bubble --disable-translate \
     --check-for-update-interval=31536000 --incognito \
-    http://localhost:4173
+    http://localhost:5173
 ) &
 EOF
 ```
+
+El bucle de espera existe porque el escritorio arranca antes que PM2: sin él,
+Chromium abriría una pantalla de error y se quedaría ahí. Reintenta durante 30
+segundos y sale en cuanto el servidor responde.
+
+Qué hace cada opción de Chromium:
+
+| Opción | Para qué |
+|---|---|
+| `--kiosk` | Pantalla completa sin barra de direcciones, pestañas ni bordes |
+| `--noerrdialogs` `--disable-session-crashed-bubble` | Nada de diálogos ni del «Chromium no se cerró correctamente» tras un corte de luz |
+| `--disable-infobars` `--disable-translate` | Sin barras superiores que roben alto de pantalla ni ofertas de traducción |
+| `--check-for-update-interval=31536000` | Sin avisos de actualización en medio del turno |
+| `--incognito` | Arranca siempre en el mismo estado; no acumula historial ni caché en la SD |
 
 > Si `~/.config/labwc/autostart` ya existía de antes con este mismo bloque, no
 > lo agregues dos veces — labwc ejecuta tanto el autostart de sistema como el
@@ -270,6 +375,29 @@ sudo reboot
 
 Al arrancar debería ir directo al escritorio y abrir Chromium en pantalla
 completa sobre `bus-display`.
+
+### Operación diaria
+
+```bash
+pm2 list
+```
+
+```bash
+pm2 logs bus-display
+```
+
+| Comando | Para qué |
+|---|---|
+| `pm2 list` | Estado, reinicios acumulados y uso de memoria |
+| `pm2 logs bus-display` | Logs en vivo (`--lines 100` para ver el histórico) |
+| `pm2 restart bus-display` | Recargar tras un `pnpm run build` |
+| `pm2 stop bus-display` | Detener sin borrarlo de la lista |
+| `pm2 delete bus-display` | Quitarlo de PM2 (requiere `pm2 save` después) |
+
+Si tras un reinicio la pantalla no levanta, el orden de diagnóstico es: `pm2
+list` (¿está el proceso?) → `systemctl status pm2-admin` (¿arrancó PM2?) →
+`curl -sf http://localhost:5173` (¿responde el servidor?). Un proceso ausente en
+`pm2 list` tras el boot casi siempre significa que faltó el `pm2 save`.
 
 ## Avisos de llegada
 

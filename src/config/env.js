@@ -4,8 +4,8 @@
 // esta pantalla, así que su host es siempre el host desde el que se abrió la
 // página:
 //
-//   kiosco en la RPi -> http://localhost:4173      => API http://localhost:8000
-//   laptop en la LAN -> http://192.168.1.14:4173   => API http://192.168.1.14:8000
+//   kiosco en la RPi -> http://localhost:5173      => API http://localhost:8000
+//   laptop en la LAN -> http://192.168.1.14:5173   => API http://192.168.1.14:8000
 //
 // Por eso el host se deriva de window.location en vez de compilarse: una URL
 // fija como http://localhost:8000 apuntaría al localhost de la laptop cuando la
