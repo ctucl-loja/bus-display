@@ -11,3 +11,22 @@ body {
   margin: 0;
   font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
 }
+
+/* ─────────────────────────────────────────────
+   Teselas del mapa (Leaflet + OpenStreetMap).
+
+   OSM es la única fuente de teselas decente que no exige API key, pero su
+   estilo por defecto es a todo color: chillón al lado del resto de la pantalla
+   y, en modo oscuro, imposible de mirar. Se lo corrige con filtros CSS sobre
+   el contenedor de teselas —nunca sobre el panel entero, para que marcadores y
+   popups conserven sus colores— buscando el aspecto de los basemaps que
+   usábamos antes: gris claro y desaturado en tema claro, gris muy oscuro con
+   etiquetas claras en tema oscuro.
+   ───────────────────────────────────────────── */
+.map-tiles-light {
+  filter: grayscale(0.9) brightness(1.06) contrast(0.88);
+}
+
+.map-tiles-dark {
+  filter: invert(1) hue-rotate(180deg) grayscale(0.92) brightness(0.85) contrast(1.05);
+}

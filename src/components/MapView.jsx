@@ -9,9 +9,17 @@ import { useGpsPosition } from '../hooks/useGpsPosition.js'
 
 const LOJA_COORDS = [-3.9931, -79.2042]
 
-const TILE_URLS = {
-  dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-  light: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+// Teselas de OpenStreetMap: son libres y NO piden API key, a diferencia de los
+// basemaps de CARTO que usábamos antes (ahora estampan "API KEY REQUIRED" sobre
+// cada tesela). Para conservar el aspecto sobrio de los mapas anteriores no se
+// cambia de proveedor por tema: se usa la misma capa y se la tiñe por CSS
+// (.map-tiles-dark / .map-tiles-light en index.css), así el tema oscuro sigue
+// siendo oscuro y el claro sigue siendo pálido y sin saturación.
+const OSM_TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
+
+const TILE_CLASSNAMES = {
+  dark: 'map-tiles-dark',
+  light: 'map-tiles-light',
 }
 
 const checkpointIcon = L.icon({
@@ -68,8 +76,10 @@ function MapView({ checkpoints = [] }) {
     <MapContainer center={LOJA_COORDS} zoom={18} scrollWheelZoom className="h-full w-full">
       <TileLayer
         key={theme}
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-        url={TILE_URLS[theme]}
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        url={OSM_TILE_URL}
+        className={TILE_CLASSNAMES[theme]}
+        maxZoom={19}
       />
 
       {drawable.map((checkpoint) => (
