@@ -62,6 +62,16 @@ describe('normalizeSteps', () => {
     assert.equal(step.checkpoints[0].order, 0, 'order 0 es un valor real, no ausencia')
   })
 
+  it('code del despacho: se conserva, y vacío o ilegible pasa a null', () => {
+    const [conCodigo] = normalizeSteps([{ ...crudo[0], code: ' G807 ' }])
+    assert.equal(conCodigo.code, 'G807')
+
+    for (const value of [null, undefined, '', '   ', 42, {}]) {
+      const [step] = normalizeSteps([{ ...crudo[0], code: value }])
+      assert.equal(step.code, null)
+    }
+  })
+
   it('no muta la respuesta original', () => {
     const copia = JSON.parse(JSON.stringify(crudo))
     normalizeSteps(crudo)

@@ -59,6 +59,10 @@ function normalizeStep(raw, index) {
     ...raw,
     step: raw.step ?? null,
     key: raw.step ?? `step-${index}`,
+    // Código del despacho: Home lo muestra enmarcado para verificar que el bus
+    // corre el itinerario correcto. Un código vacío se normaliza a null para
+    // que la pantalla enseñe "Sin código" en vez de un recuadro en blanco.
+    code: nonEmptyString(raw.code),
     start_schedule: nonEmptyString(raw.start_schedule),
     end_schedule: nonEmptyString(raw.end_schedule),
     line: normalizeLine(raw.line),

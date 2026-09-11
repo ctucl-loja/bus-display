@@ -2,20 +2,11 @@ import { NavLink } from 'react-router-dom'
 import { useEcuadorClock } from '../hooks/useEcuadorClock.js'
 import { useTheme } from '../context/ThemeContext.jsx'
 
-function InfoIcon(props) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>
-      <circle cx="12" cy="12" r="10" />
-      <path d="M12 16v-5" />
-      <path d="M12 7.5h.01" />
-    </svg>
-  )
-}
-
-// `icon` es opcional: solo Información lo lleva. Todos comparten el mismo
-// estilo y el mismo estado activo.
+// Los cuatro destinos de la pantalla. Todos comparten estilo y estado
+// activo; `icon` sigue soportado abajo aunque hoy ninguno lo use.
 const NAV_LINKS = [
   { to: '/', label: 'Home' },
+  { to: '/map', label: 'Mapa' },
   { to: '/itinerary', label: 'Itinerario' },
   { to: '/info', label: 'Info' },
 ]

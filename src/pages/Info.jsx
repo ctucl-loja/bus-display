@@ -1,5 +1,6 @@
 import { useNetworkInfo } from '../hooks/useNetworkInfo.js'
 import { useDragScroll } from '../hooks/useDragScroll.js'
+import ShutdownButton from '../components/ShutdownButton.jsx'
 
 // Los logotipos se descubren en tiempo de compilación en vez de importarse:
 // un import estático rompería el build mientras los archivos no existan, y la
@@ -185,10 +186,16 @@ function StaleNotice() {
 }
 
 /**
- * Vista informativa. Todo su contenido es de solo lectura: no hay enlaces,
- * `mailto:`, `tel:`, botones de copiar ni manejadores de clic. Los datos de
- * contacto y los logotipos son texto e imágenes inertes, para que nada pueda
- * sacar a Chromium del modo kiosco.
+ * Vista informativa y de estado del equipo.
+ *
+ * El contenido informativo es inerte: no hay enlaces, `mailto:`, `tel:` ni
+ * botones de copiar; los datos de contacto y los logotipos son texto e
+ * imágenes, para que nada pueda sacar a Chromium del modo kiosco.
+ *
+ * La única acción de la vista es el apagado del dispositivo, al final y con
+ * confirmación explícita. Vive aquí, junto a la conectividad del equipo,
+ * porque es la vista del DISPOSITIVO y porque un botón destructivo no debe
+ * estar en la barra de navegación, donde se toca por accidente.
  */
 function Info() {
   const { ref, handlers } = useDragScroll()
@@ -246,6 +253,14 @@ function Info() {
             que se abre esta pantalla.
           </p>
           <Connectivity />
+        </Card>
+
+        <Card title="Energía del dispositivo">
+          <p className="mb-4 text-base text-slate-500 dark:text-slate-400 lg:text-lg">
+            Apagado ordenado del equipo (la Raspberry Pi). Úselo antes de cortar la alimentación
+            del bus: desconectarlo en caliente puede dañar la tarjeta de memoria.
+          </p>
+          <ShutdownButton />
         </Card>
       </div>
     </div>

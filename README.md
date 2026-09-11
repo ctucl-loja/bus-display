@@ -246,7 +246,7 @@ pm2 serve dist 5173 --name bus-display --spa
 
 Tres detalles de ese comando:
 
-- **`--spa` no es opcional.** Sin él, recargar en `/itinerary` o `/info` devuelve
+- **`--spa` no es opcional.** Sin él, recargar en `/map`, `/itinerary` o `/info` devuelve
   404: son rutas de React Router que no existen como archivos en `dist/`. Con
   `--spa`, cualquier ruta desconocida entrega `index.html` y el router resuelve
   desde ahí.
@@ -437,8 +437,8 @@ llega en el evento, para que ambos sistemas hablen de la misma marcación.
 | `utils/arrival.js` | etiquetas, signos y formato de la diferencia |
 
 El hook se monta en `layouts/MainLayout.jsx`, no en una página: el layout no se
-desmonta al navegar, así que los avisos aparecen igual en `/` que en
-`/itinerary` y el estado del polling sobrevive al cambio de ruta.
+desmonta al navegar, así que los avisos aparecen igual en `/`, `/map`,
+`/itinerary` e `/info`, y el estado del polling sobrevive al cambio de ruta.
 
 ### Polling y cola
 
@@ -467,9 +467,52 @@ Constantes: `POLL_INTERVAL_MS` (1500 ms) en el hook y
 
 | Ruta | Pantalla |
 |---|---|
-| `/` | Mapa con la posición en vivo del bus y los puntos de control del tramo + panel de línea, punto actual/siguiente y vehículo |
-| `/info` | Vista informativa: origen del sistema, logotipos, contacto y conectividad del equipo |
+| `/` | Home: línea con el código del despacho, punto actual/siguiente y vehículo a plena anchura y en tipografía grande. Sin mapa y, por tanto, sin polling de GPS |
+| `/map` | Mapa con la posición en vivo del bus y los puntos de control del tramo + panel lateral con esos mismos datos, en versión compacta |
+| `/info` | Vista informativa: origen del sistema, logotipos, contacto, conectividad del equipo y apagado del dispositivo |
 | `/itinerary` | Tabla del tramo: hora calculada vs hora reportada, navegable entre tramos |
+
+`/` y `/map` comparten la lógica (`useDispatch`, `useVehicle`,
+`findCurrentStep`, `findCurrentAndNextCheckpoint`, `describeLine`) y solo
+difieren en presentación: `InfoCard` acepta `size="lg"` para la versión de Home.
+El punto actual se sigue eligiendo por horario calculado, no por la marcación
+GPS. En Home los dos puntos ocupan la primera fila y quedan visibles al abrir a
+800x480; línea y vehículo se alcanzan desplazando.
+
+Dos diferencias deliberadas de Home respecto del panel de `/map`:
+
+- **Código del despacho.** La tarjeta de Línea abre con `step.code` enmarcado y
+  en violeta, separado del nombre de la línea: es lo que permite comprobar de un
+  vistazo que el bus está corriendo el itinerario correcto. Un código ausente o
+  vacío se muestra como «Sin código», nunca como un recuadro en blanco.
+- **Sin propietario.** Home muestra registro, placa y cooperativa. El nombre del
+  propietario es un dato personal que no interviene en la operación, así que no
+  se repite en la pantalla principal; sigue en el panel lateral de `/map`.
+
+---
+
+## Apagado del dispositivo
+
+El botón vive al final de `/info`, bajo «Energía del dispositivo», junto a la
+conectividad del equipo. **No está en la barra de navegación**: es una acción
+destructiva y ahí se tocaría por accidente.
+
+Siempre son dos pasos. El botón abre un diálogo que dice qué va a pasar —«Esto
+provocará que el dispositivo se apague»— con **Apagar** y **Cancelar**; un solo
+toque nunca apaga el bus. Al confirmar se llama a
+`POST /api/system/shutdown` de la API local (sin cuerpo: el comando vive en la
+Raspberry) y la pantalla muestra el resultado:
+
+| Respuesta | Mensaje |
+|---|---|
+| `scheduled` | El dispositivo se está apagando |
+| `already_scheduled` | El apagado ya estaba en curso |
+| `unavailable` | Este equipo no permite apagarse desde la pantalla |
+| fallo de red | No se pudo contactar con el equipo; el dispositivo sigue encendido, con botón «Volver» para reintentar |
+
+El corte real ocurre unos segundos después de la respuesta, para que el aviso
+alcance a mostrarse. La configuración de `sudo` en la Raspberry está en el
+README de `simtra-bus-manager`.
 
 Al abrir `/itinerary` se selecciona solo el tramo que corresponde a la hora de
 Ecuador (el que contiene la hora actual; si ninguno, el próximo que aún no
