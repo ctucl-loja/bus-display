@@ -48,12 +48,13 @@ const NAV_LINKS = [
 const TEXT_LINKS = NAV_LINKS.filter((link) => !link.iconOnly)
 const ICON_LINKS = NAV_LINKS.filter((link) => link.iconOnly)
 
-// Mismo alto de pulsación para enlaces y para el botón de tema (56 px): la fila
-// completa mide lo mismo la toque el conductor donde la toque.
-const CONTROL_HEIGHT = 'min-h-14'
+// Mismo alto de pulsación para enlaces y para el botón de tema (56 px; 64 px en
+// el panel de 1280x800): la fila completa mide lo mismo la toque el conductor
+// donde la toque.
+const CONTROL_HEIGHT = 'min-h-14 xl:min-h-16'
 
 function navLinkClass({ isActive }) {
-  return `flex ${CONTROL_HEIGHT} items-center gap-2 rounded-md px-2 py-2 text-base font-medium transition-colors sm:px-3 sm:text-lg lg:px-4 lg:text-xl ${
+  return `flex ${CONTROL_HEIGHT} items-center gap-2 rounded-md px-2 py-2 text-base font-medium transition-colors sm:px-3 sm:text-lg lg:px-4 lg:text-xl xl:px-5 xl:text-2xl ${
     isActive
       ? 'bg-cyan-50 text-cyan-700 ring-1 ring-cyan-500/30 dark:bg-cyan-500/10 dark:text-cyan-400 dark:ring-cyan-400/30'
       : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100'
@@ -69,7 +70,7 @@ function NavItem({ to, label, icon: Icon, srOnly }) {
       title={label}
       className={navLinkClass}
     >
-      {Icon && <Icon className="h-7 w-7 shrink-0 sm:h-8 sm:w-8 lg:h-9 lg:w-9" />}
+      {Icon && <Icon className="h-7 w-7 shrink-0 sm:h-8 sm:w-8 lg:h-9 lg:w-9 xl:h-10 xl:w-10" />}
       <span className={srOnly ? 'sr-only' : undefined}>{label}</span>
     </NavLink>
   )
@@ -91,25 +92,27 @@ function NavItem({ to, label, icon: Icon, srOnly }) {
  * de `lg`. Al separar las filas hay sitio de sobra, así que en vez de ocultar
  * información se ajustan tamaños y separaciones, que era lo que faltaba.
  *
- * El alto se mantiene en 120 px a propósito: `MainLayout` reparte el resto de la
- * pantalla con `flex-1`, y las vistas están calculadas sobre los ~360 px que
- * quedan a 800x480. Cambiarlo obligaría a recalcularlas.
+ * El alto es 120 px en la pantalla de 7" y 132 px desde `xl` (≥1280 px), que es
+ * lo justo para la fila de 48 px del reloj más la de 64 px de los controles.
+ * `MainLayout` reparte el resto con `flex-1`: quedan ~360 px a 800x480 y 668 px
+ * a 1280x800, que es sobre lo que están calculadas las vistas. Cambiar estos dos
+ * valores obligaría a recalcularlas.
  */
 function Navbar() {
   const { date, time } = useEcuadorClock()
   const { theme, toggleTheme } = useTheme()
 
   return (
-    <header className="flex h-[120px] shrink-0 flex-col justify-center gap-1 border-b border-slate-200 bg-white/80 px-3 backdrop-blur-sm lg:gap-2 lg:px-6 dark:border-cyan-500/20 dark:bg-slate-900/80">
+    <header className="flex h-[120px] shrink-0 flex-col justify-center gap-1 border-b border-slate-200 bg-white/80 px-3 backdrop-blur-sm lg:gap-2 lg:px-6 xl:h-[132px] xl:gap-2.5 xl:px-8 dark:border-cyan-500/20 dark:bg-slate-900/80">
       {/* ── Fila 1: hora · fecha ──────────────────────────────────────────── */}
       <div className="flex w-full items-baseline justify-between gap-3">
-        <span className="shrink-0 font-mono text-2xl font-bold tabular-nums tracking-wider text-cyan-600 sm:text-3xl lg:text-4xl dark:text-cyan-400">
+        <span className="shrink-0 font-mono text-2xl font-bold tabular-nums tracking-wider text-cyan-600 sm:text-3xl lg:text-4xl xl:text-5xl dark:text-cyan-400">
           {time}
         </span>
         {/* `min-w-0` deja que la fecha ceda espacio antes que el reloj si el
             ancho se estrecha; el formato largo en español es el que manda el
             tamaño de esta fila. */}
-        <span className="min-w-0 text-right text-base font-medium text-slate-700 sm:text-lg lg:text-2xl dark:text-slate-200">
+        <span className="min-w-0 text-right text-base font-medium text-slate-700 sm:text-lg lg:text-2xl xl:text-3xl dark:text-slate-200">
           {date}
         </span>
       </div>
@@ -133,9 +136,9 @@ function Navbar() {
             onClick={toggleTheme}
             aria-label={theme === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'}
             title={theme === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'}
-            className={`flex ${CONTROL_HEIGHT} w-12 items-center justify-center rounded-md sm:w-14 text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100`}
+            className={`flex ${CONTROL_HEIGHT} w-12 items-center justify-center rounded-md sm:w-14 xl:w-16 text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100`}
           >
-            {theme === 'dark' ? <SunIcon className="h-7 w-7 sm:h-8 sm:w-8 lg:h-9 lg:w-9" /> : <MoonIcon className="h-7 w-7 sm:h-8 sm:w-8 lg:h-9 lg:w-9" />}
+            {theme === 'dark' ? <SunIcon className="h-7 w-7 sm:h-8 sm:w-8 lg:h-9 lg:w-9 xl:h-10 xl:w-10" /> : <MoonIcon className="h-7 w-7 sm:h-8 sm:w-8 lg:h-9 lg:w-9 xl:h-10 xl:w-10" />}
           </button>
         </div>
       </div>

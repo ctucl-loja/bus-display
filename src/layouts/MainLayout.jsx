@@ -3,7 +3,8 @@ import Navbar from '../components/Navbar.jsx'
 import ArrivalNotification from '../components/ArrivalNotification.jsx'
 import { useCheckpointEvents } from '../hooks/useCheckpointEvents.js'
 
-// Fila 1: Navbar fija (120px). Fila 2: contenido de la ruta activa.
+// Fila 1: Navbar fija (120 px; 132 px desde `xl`). Fila 2: contenido de la
+// ruta activa.
 //
 // Los avisos de llegada viven aqui, no dentro de una pagina: el layout no se
 // desmonta al navegar, asi que el polling y su lastEventId sobreviven al cambio

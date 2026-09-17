@@ -26,7 +26,7 @@ function Map() {
   const { current, next } = findCurrentAndNextCheckpoint(currentStep, time)
 
   return (
-    <div className="flex h-full flex-col gap-4 overflow-y-auto p-4 lg:h-full lg:flex-row lg:overflow-hidden">
+    <div className="flex h-full flex-col gap-4 overflow-y-auto p-4 lg:h-full lg:flex-row lg:overflow-hidden xl:gap-5 xl:p-5">
       <section className="h-[60vh] w-full shrink-0 overflow-hidden rounded-xl dark:border dark:border-slate-800 shadow-lg shadow-black/40 lg:h-full lg:w-2/3">
         <MapView checkpoints={currentStep?.checkpoints ?? []} />
       </section>

@@ -10,7 +10,8 @@ import { SCHEDULE_UNAVAILABLE } from '../utils/homeSchedule.js'
 // `InfoCard` no deja poner nada junto al título. Esa fila estaba vacía, y
 // aprovecharla ahorra una línea de texto por tarjeta — las dos que faltaban para
 // que las tres filas y el botón de recarga quepan completos en los 360 px de la
-// pantalla de 7", sin recurrir a tipografía diminuta.
+// pantalla de 7", sin recurrir a tipografía diminuta. En el panel de 1280x800
+// (`xl`) el mismo ahorro es lo que deja subir el nombre de la línea a 36 px.
 //
 // ── Las dos variantes ───────────────────────────────────────────────────────
 //
@@ -84,13 +85,13 @@ const VARIANTS = {
 }
 
 const FRAME_BASE =
-  'flex flex-col justify-center rounded-lg border px-3 py-2 lg:px-5 lg:py-3'
+  'flex flex-col justify-center rounded-lg border px-3 py-2 lg:px-5 lg:py-3 xl:px-6 xl:py-3'
 
 function ScheduleField({ label, value, variant }) {
   return (
     <div className="flex items-baseline gap-1.5">
-      <span className={`text-sm lg:text-base ${variant.scheduleLabel}`}>{label}</span>
-      <span className={`font-mono text-lg font-bold tabular-nums lg:text-xl ${variant.scheduleValue}`}>
+      <span className={`text-sm lg:text-base xl:text-lg ${variant.scheduleLabel}`}>{label}</span>
+      <span className={`font-mono text-lg font-bold tabular-nums lg:text-xl xl:text-2xl ${variant.scheduleValue}`}>
         {value}
       </span>
     </div>
@@ -117,11 +118,11 @@ function LapCard({ title, step, message, badge = null, muted = false, variant = 
           juntos en pantallas estrechas en vez de partirse por la mitad. */}
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5">
         <div className="flex items-baseline gap-2">
-          <h3 className={`text-base font-semibold uppercase tracking-wide lg:text-lg ${theme.title}`}>
+          <h3 className={`text-base font-semibold uppercase tracking-wide lg:text-lg xl:text-xl ${theme.title}`}>
             {title}
           </h3>
           {badge && (
-            <span className={`rounded-md px-2 py-0.5 text-xs font-semibold uppercase tracking-wide ${theme.badge}`}>
+            <span className={`rounded-md px-2 py-0.5 text-xs font-semibold uppercase tracking-wide xl:text-sm ${theme.badge}`}>
               {badge}
             </span>
           )}
@@ -137,7 +138,7 @@ function LapCard({ title, step, message, badge = null, muted = false, variant = 
 
       {step ? (
         <p
-          className={`flex flex-wrap items-center gap-x-2 gap-y-1 text-[22px] leading-tight font-bold break-words lg:text-[28px] ${
+          className={`flex flex-wrap items-center gap-x-2 gap-y-1 text-[22px] leading-tight font-bold break-words lg:text-[28px] xl:text-[36px] ${
             muted ? theme.nameMuted : theme.name
           }`}
         >
@@ -150,7 +151,7 @@ function LapCard({ title, step, message, badge = null, muted = false, variant = 
           <span className="min-w-0">{describeLine(step.line)}</span>
         </p>
       ) : (
-        <p className={`text-lg leading-snug font-semibold lg:text-xl ${theme.message}`}>
+        <p className={`text-lg leading-snug font-semibold lg:text-xl xl:text-2xl ${theme.message}`}>
           {message}
         </p>
       )}

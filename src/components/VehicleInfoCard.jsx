@@ -10,9 +10,9 @@ const MISSING = 'No disponible'
 function VehicleField({ label, value, accent = false }) {
   return (
     <div className="min-w-0">
-      <dt className="text-base text-slate-500 dark:text-slate-400 lg:text-lg">{label}</dt>
+      <dt className="text-base text-slate-500 dark:text-slate-400 lg:text-lg xl:text-xl">{label}</dt>
       <dd
-        className={`text-xl font-bold break-words lg:text-2xl ${
+        className={`text-xl font-bold break-words lg:text-2xl xl:text-3xl ${
           accent ? 'text-cyan-600 dark:text-cyan-400' : 'text-slate-800 dark:text-slate-100'
         }`}
       >
@@ -50,7 +50,7 @@ function VehicleInfoCard() {
       {!vehicle && <StatusMessage status={status} messages={VEHICLE_MESSAGES} size="lg" />}
 
       {vehicle && (
-        <dl className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-4">
+        <dl className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-4 xl:gap-y-4">
           <VehicleField label="Registro" value={vehicle.register ?? MISSING} />
           <VehicleField label="Placa" value={vehicle.plate ?? MISSING} />
           <VehicleField label="Cooperativa" value={vehicle.company?.name ?? MISSING} accent />
@@ -59,7 +59,7 @@ function VehicleInfoCard() {
       )}
 
       {vehicle && status === 'error' && (
-        <p className="mt-3 text-base text-amber-600 dark:text-amber-400">
+        <p className="mt-3 text-base text-amber-600 dark:text-amber-400 lg:text-lg xl:text-xl">
           No se pudo actualizar la información del vehículo
         </p>
       )}

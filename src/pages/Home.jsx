@@ -35,16 +35,23 @@ import {
 // de vez en cuando, en vez de ocupar sitio en la pantalla que el conductor mira
 // mientras conduce. Home, en consecuencia, tampoco hace polling del vehículo.
 //
-// Presupuesto vertical en la pantalla de 7" (800x480): el navbar ocupa 120 px,
-// así que quedan unos 360 px para las tres filas más el botón de recarga. El
-// contenedor reparte el espacio sobrante entre las filas en pantallas más altas
-// y desplaza cuando no alcanza, para que ningún estado quede inalcanzable.
+// Presupuesto vertical, por pantalla:
+//
+//   800x480  (7" de la RPi)  navbar 120 px → ~360 px para las tres filas más el
+//                            botón de recarga. Manda el escalón base/sm.
+//   1280x800 (panel actual)  navbar 132 px → 668 px, y manda el escalón `xl`:
+//                            punto de control a 44 px, vuelta a 36 px. Las tres
+//                            filas y el botón entran completos sin desplazar.
+//
+// El contenedor reparte el espacio sobrante entre las filas cuando sobra y
+// desplaza cuando no alcanza —un nombre de punto de dos líneas, por ejemplo—,
+// para que ningún estado quede inalcanzable.
 
 // Datos principales frente a etiquetas y secundarios.
 const POINT_NAME_CLASS =
-  'text-[26px] leading-tight font-bold break-words text-slate-800 dark:text-slate-50 lg:text-[36px]'
+  'text-[26px] leading-tight font-bold break-words text-slate-800 dark:text-slate-50 lg:text-[36px] xl:text-[44px]'
 const POINT_TIME_CLASS =
-  'mt-0.5 font-mono text-[26px] leading-none font-bold tabular-nums text-amber-600 dark:text-amber-400 lg:text-[36px]'
+  'mt-0.5 font-mono text-[26px] leading-none font-bold tabular-nums text-amber-600 dark:text-amber-400 lg:text-[36px] xl:text-[44px]'
 
 function PointCard({ title, checkpoint, fallbackName, message }) {
   // Sin vuelta en curso no se muestran puntos: el conductor los leería como el
@@ -52,7 +59,7 @@ function PointCard({ title, checkpoint, fallbackName, message }) {
   if (message) {
     return (
       <InfoCard title={title} size="compact" className="flex flex-col justify-center">
-        <p className="text-lg leading-snug font-semibold text-slate-500 lg:text-xl dark:text-slate-400">
+        <p className="text-lg leading-snug font-semibold text-slate-500 lg:text-xl xl:text-2xl dark:text-slate-400">
           {message}
         </p>
       </InfoCard>
@@ -73,7 +80,7 @@ function StaleNotice() {
   return (
     <p
       role="status"
-      className="shrink-0 text-base font-medium text-amber-600 dark:text-amber-400"
+      className="shrink-0 text-base font-medium text-amber-600 lg:text-lg xl:text-xl dark:text-amber-400"
     >
       No se pudo actualizar el itinerario. Se muestran los últimos datos recibidos.
     </p>
@@ -112,7 +119,7 @@ function Home() {
     // La cadena de alturas: MainLayout da `flex-1` al <main>, esto toma `h-full`
     // y `min-h-0` para poder encogerse dentro de él. No se añade otro `h-screen`
     // debajo del navbar, que desbordaría por los 120 px de la barra.
-    <div className="flex h-full min-h-0 flex-col gap-2 overflow-y-auto px-2 py-1.5 lg:gap-4 lg:p-4">
+    <div className="flex h-full min-h-0 flex-col gap-2 overflow-y-auto px-2 py-1.5 lg:gap-4 lg:p-4 xl:gap-3 xl:px-5 xl:py-3">
       {/* `flex-1 basis-0` reparte el espacio sobrante entre las tres filas en
           pantallas altas; `min-h-min` impide que se compriman por debajo de su
           contenido cuando no alcanza — ahí manda el scroll del contenedor. */}
@@ -128,7 +135,7 @@ function Home() {
             estado real se dice aparte: sin esto, una vuelta terminada con su
             código y su horario se lee como la vuelta en curso. */}
         {finished && topStep && (
-          <p className="mt-1 text-base font-medium text-slate-500 dark:text-slate-400">
+          <p className="mt-1 text-base font-medium text-slate-500 lg:text-lg xl:text-xl dark:text-slate-400">
             {topMessage}
           </p>
         )}
