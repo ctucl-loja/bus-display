@@ -1,16 +1,23 @@
 // Card genérica: título + contenido libre.
 //
-// `size` solo cambia la presentación, no el contenido: 'sm' es la tarjeta
-// compacta de la barra lateral del mapa; 'lg' es la de Home, que dispone de
-// todo el ancho del body y usa tipografía legible a distancia.
+// `size` solo cambia la presentación, no el contenido:
+//
+//   sm      → la tarjeta de la barra lateral del mapa, que comparte pantalla
+//             con el mapa;
+//   lg      → tipografía grande, legible desde el asiento del conductor;
+//   compact → la de las tres filas de Home. Es 'lg' con el relleno justo para
+//             que las tres filas quepan completas en los 360 px que deja el
+//             navbar a 800x480, sin recurrir a tipografía diminuta.
 const TITLE_SIZE = {
   sm: 'mb-2 text-xs',
   lg: 'mb-1 text-xl',
+  compact: 'mb-0.5 text-base lg:text-lg',
 }
 
 const PADDING = {
   sm: 'p-4',
   lg: 'px-5 py-3',
+  compact: 'px-3 py-2 lg:px-5 lg:py-3',
 }
 
 function InfoCard({ title, size = 'sm', className = '', children }) {

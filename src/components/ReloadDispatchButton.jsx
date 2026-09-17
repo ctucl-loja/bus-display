@@ -32,16 +32,19 @@ const TONE_CLASSES = {
 function ReloadDispatchButton({ onReload, refreshing, result, onDismiss }) {
   return (
     <div className="flex flex-col gap-3">
+      {/* aria-busy comunica el trabajo en curso además del cambio de texto: el
+          botón deshabilitado por sí solo no dice por qué.
+
+          min-h-14 (56 px) mantiene el objetivo táctil cómodo y deja sitio a las
+          tres filas operativas en los 360 px de la pantalla de 7". */}
       <button
         type="button"
         onClick={onReload}
         disabled={refreshing}
-        // aria-busy comunica el trabajo en curso además del cambio de texto:
-        // el botón deshabilitado por sí solo no dice por qué.
         aria-busy={refreshing}
-        className="flex min-h-16 items-center justify-center gap-3 rounded-lg border-2 border-cyan-500/60 px-6 py-4 text-xl font-bold text-cyan-700 transition-colors hover:bg-cyan-50 disabled:opacity-60 lg:text-2xl dark:text-cyan-400 dark:hover:bg-cyan-500/10"
+        className="flex min-h-14 items-center justify-center gap-3 rounded-lg border-2 border-cyan-500/60 px-4 py-2 text-lg font-bold text-cyan-700 transition-colors hover:bg-cyan-50 disabled:opacity-60 lg:px-6 lg:py-3 lg:text-xl dark:text-cyan-400 dark:hover:bg-cyan-500/10"
       >
-        <ReloadIcon className={`h-8 w-8 shrink-0 ${refreshing ? 'animate-spin' : ''}`} />
+        <ReloadIcon className={`h-7 w-7 shrink-0 ${refreshing ? 'animate-spin' : ''}`} />
         {refreshing ? 'Actualizando itinerario…' : 'Volver a cargar itinerario'}
       </button>
 

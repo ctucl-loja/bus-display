@@ -23,7 +23,7 @@ geocercas. Así la pantalla sigue funcionando sin señal.
 | Dato | Endpoint local | Origen |
 |---|---|---|
 | Itinerario del día | `GET /api/dispatch` | cacheado por `bus_monitor.py` |
-| Vehículo | `GET /api/vehicle` | cacheado por `bus_monitor.py` |
+| Vehículo | `GET /api/vehicle` | cacheado por `bus_monitor.py`; lo consulta **solo** `/info` |
 | Posición del bus | `GET /api/gps/last_position` | escrita por el receptor GPS, consultada cada 3 s |
 | Llegadas a puntos de control | `GET /api/events?event_type=checkpoint_arrival&after_id=N` | emitidas por `bus_monitor.py`, consultadas cada 1,5 s |
 | Conectividad del equipo | `GET /api/system/network` | leída del sistema por la RPi, consultada cada 30 s |
@@ -101,9 +101,10 @@ Producción (kiosco en la RPi): ver [Despliegue en producción](#despliegue-en-p
 
 ## Tests
 
-Funciones puras (parsing de horarios, selección de tramo, normalización de las
-respuestas de la API, formato de diferencias, validación del formulario de Wi-Fi
-y textos de apagado/reinicio) con el runner de Node, sin dependencias nuevas:
+Funciones puras (parsing de horarios, selección de tramo, **estado temporal de
+la Home**, normalización de las respuestas de la API, formato de diferencias,
+validación del formulario de Wi-Fi y textos de apagado/reinicio) con el runner
+de Node, sin dependencias nuevas:
 
 ```bash
 pnpm test
@@ -117,12 +118,19 @@ precisamente por esto: son módulos sin React, sin `fetch` y sin
 importan `src/config/env.js`, que usa `window`, y no son ejecutables fuera del
 navegador.
 
+`tests/homeSchedule.test.js` cubre la selección temporal de la Home: tramos
+desordenados, dos vueltas seguidas de la misma línea, vuelta activa / intermedia
+/ última, antes del inicio, entre vueltas, fin de la jornada, lista vacía,
+horarios inválidos, el límite horario compartido entre dos vueltas y que el
+arreglo original no se mute.
+
 **Limitación consciente:** no hay tests de componentes. El enmascarado del campo
-de clave, los diálogos de confirmación, el desplazamiento táctil y la
-distribución a 800x480 se verifican **a mano en el navegador**; la suite no los
-cubre. Lo que sí está cubierto son las decisiones con reglas dentro: qué estado
-puede vaciar el itinerario, qué acción se anuncia ante un conflicto de energía y
-qué entradas rechaza el formulario.
+de clave, los diálogos de confirmación, el desplazamiento táctil, el arrastre
+empezando encima de un logotipo y la distribución a 800x480 se verifican **a
+mano en el navegador**; la suite no los cubre. Lo que sí está cubierto son las
+decisiones con reglas dentro: qué vuelta está en curso y cuál viene después, qué
+estado puede vaciar el itinerario, qué acción se anuncia ante un conflicto de
+energía y qué entradas rechaza el formulario.
 
 ## Acceso desde una laptop de la misma LAN
 
@@ -497,9 +505,9 @@ Constantes: `POLL_INTERVAL_MS` (1500 ms) en el hook y
 
 | Ruta | Pantalla |
 |---|---|
-| `/` | Home: línea con el código del despacho, punto actual/siguiente y vehículo a plena anchura y en tipografía grande. Sin mapa y, por tanto, sin polling de GPS |
+| `/` | Home: línea actual, punto actual/siguiente y siguiente vuelta, a plena anchura y en tipografía grande. Sin mapa y, por tanto, sin polling de GPS |
 | `/map` | Mapa con la posición en vivo del bus y los puntos de control del tramo + panel lateral con esos mismos datos, en versión compacta |
-| `/info` | Vista informativa: origen del sistema, logotipos y contacto |
+| `/info` | Ficha del vehículo, origen del sistema, logotipos y contacto |
 | `/itinerary` | Tabla del tramo: hora calculada vs hora reportada, navegable entre tramos |
 | `/settings` | Configuración: red del equipo, conexión Wi-Fi, apagado y reinicio |
 
@@ -510,22 +518,119 @@ desborde horizontal. Conserva el nombre accesible «Configuración» vía
 dentro de `MainLayout`, así que los avisos de llegada aparecen igual en
 cualquiera de ellas.
 
-`/` y `/map` comparten la lógica (`useDispatch`, `useVehicle`,
-`findCurrentStep`, `findCurrentAndNextCheckpoint`, `describeLine`) y solo
-difieren en presentación: `InfoCard` acepta `size="lg"` para la versión de Home.
-El punto actual se sigue eligiendo por horario calculado, no por la marcación
-GPS. En Home los dos puntos ocupan la primera fila y quedan visibles al abrir a
-800x480; línea y vehículo se alcanzan desplazando.
+---
 
-Dos diferencias deliberadas de Home respecto del panel de `/map`:
+## Home (`/`)
 
-- **Código del despacho.** La tarjeta de Línea abre con `step.code` enmarcado y
-  en violeta, separado del nombre de la línea: es lo que permite comprobar de un
-  vistazo que el bus está corriendo el itinerario correcto. Un código ausente o
-  vacío se muestra como «Sin código», nunca como un recuadro en blanco.
-- **Sin propietario.** Home muestra registro, placa y cooperativa. El nombre del
-  propietario es un dato personal que no interviene en la operación, así que no
-  se repite en la pantalla principal; sigue en el panel lateral de `/map`.
+Tres filas operativas bajo el navbar, más el botón de recarga:
+
+```text
+┌──────────────────────────────────────────────────┐
+│ LÍNEA ACTUAL                                     │
+│ Código · nombre de línea      Inicio: …  Fin: …  │
+├────────────────────────┬─────────────────────────┤
+│ PUNTO ACTUAL           │ SIGUIENTE PUNTO         │
+│ Nombre y hora          │ Nombre y hora           │
+├────────────────────────┴─────────────────────────┤
+│ SIGUIENTE VUELTA                                 │
+│ Código · nombre de línea      Inicio: …  Fin: …  │
+└──────────────────────────────────────────────────┘
+│           Volver a cargar itinerario             │
+```
+
+**«Siguiente punto» y «siguiente vuelta» son cosas distintas.** El primero es el
+próximo punto de control DENTRO de la vuelta en curso; el segundo es el próximo
+step del itinerario, y **puede ser de la misma línea**: un bus repite la misma
+ruta varias veces al día. Por eso la siguiente vuelta no se busca «una línea con
+otro nombre», sino la siguiente por horario.
+
+Las dos tarjetas de línea muestran lo mismo (`src/components/LapCard.jsx`):
+código del despacho enmarcado en violeta —es lo que permite comprobar de un
+vistazo que el bus corre el itinerario correcto—, nombre de la línea vía
+`describeLine` y las horas de inicio y fin con etiqueta. Un horario ausente o
+ilegible se muestra como «Horario no disponible», nunca en blanco.
+
+### Estado temporal
+
+`src/utils/homeSchedule.js` responde una pregunta que `findCurrentStep` **no**
+responde. Comparar los dos importa:
+
+| Función | Pregunta | Devuelve |
+|---|---|---|
+| `findCurrentStep` (Mapa, Itinerario) | «¿qué tramo hay que pintar?» | el activo; si no hay, el próximo; si ya pasaron todos, el último. **Nunca null habiendo tramos** |
+| `resolveHomeSchedule` (Home) | «¿en qué momento del día está el bus?» | una fase explícita, y `currentStep` **solo** si el reloj cae dentro de una ventana |
+
+Home necesita la diferencia: presentar como activa una vuelta que no ha empezado
+haría que el conductor viera puntos de control como si los estuviera
+recorriendo. Los contratos de `itinerary.js` no se tocaron.
+
+| Fase | Tarjeta superior | Fila de puntos | Tarjeta inferior |
+|---|---|---|---|
+| `active` | la vuelta en curso | punto actual y siguiente | la sucesora, o «No hay más líneas programadas después de la actual» |
+| `before_first` | «El recorrido del día aún no inicia» | «El recorrido aún no inicia» | la primera vuelta programada, con horarios |
+| `between` | la anterior, **atenuada y con la etiqueta «VUELTA FINALIZADA»**, más «No hay una vuelta en curso» | «Sin vuelta en curso» | la próxima que debe iniciar |
+| `after_last` | la última, etiquetada como finalizada, más «El itinerario del día finalizó» | «Jornada finalizada» | «El itinerario del día finalizó: no hay más vueltas programadas» |
+| `no_schedule` | «No hay un itinerario cargado para hoy. Usa «Volver a cargar itinerario»…» | «Sin itinerario» | «Sin itinerario cargado» |
+| `unscheduled` | las vueltas de hoy no tienen horario utilizable | «Horario no disponible» | «Horario no disponible» |
+| `unknown_time` | no se pudo leer la hora del equipo | «Hora no disponible» | no se puede determinar |
+
+«Itinerario no cargado» y «jornada terminada» son mensajes **distintos** a
+propósito: confundirlos haría creer al conductor que ya terminó cuando en
+realidad nunca se descargó nada.
+
+Mientras `status === 'loading'` se muestra «Cargando itinerario…» en las tres
+filas: no se anticipa ningún estado vacío. Con `status === 'error'` y datos
+conservados, el itinerario sigue visible y el aviso va aparte («No se pudo
+actualizar el itinerario…»).
+
+### El límite entre dos vueltas
+
+Las ventanas son **cerradas por los dos extremos** (`start <= ahora <= end`),
+igual que en `findCurrentStepIndex`. Si una vuelta termina a las 07:00:00 y la
+siguiente empieza a las 07:00:00, **ese segundo pertenece a la que termina**: se
+elige la de `start_schedule` más temprano. Dos motivos:
+
+1. Coincide con `findCurrentStep`, así que Home, Mapa e Itinerario no se
+   contradicen durante ese segundo. El último punto de control de la vuelta que
+   cierra suele estar justo a esa hora, y es el que el conductor tiene delante.
+2. La siguiente vuelta se busca **por posición** en la lista ya ordenada, nunca
+   por horario, así que el mismo step no puede salir arriba y abajo aunque
+   compartan el instante. Hay un test para exactamente eso.
+
+Las vueltas con horario ilegible no pueden estar en curso **ni** ser elegidas
+como próxima: `sortStepsBySchedule` las manda al final, y tomar «la siguiente de
+la lista» las escogería por accidente.
+
+### Altura y desbordes
+
+El contenedor es `h-full min-h-0 flex-col overflow-y-auto`; no se añade otro
+`h-screen` bajo el navbar, que desbordaría por sus 120 px. Las tres filas son
+`flex-1 basis-0 min-h-min`, así que:
+
+- en pantallas altas **reparten el espacio sobrante** en vez de amontonarse
+  arriba (medido a 1280x800: 181 px por fila);
+- a 800x480 con datos habituales las tres filas **y** el botón caben completos,
+  sin desborde (medido: 82 + 104 + 82 + 56 px);
+- con nombres muy largos, zoom o el panel de resultado de la recarga, el
+  contenido **crece y se desplaza** en vez de recortarse o superponerse. Ningún
+  estado queda inalcanzable.
+
+La fila de puntos es `grid-cols-1 sm:grid-cols-2`: dos columnas a 800 px,
+apiladas por debajo, sin desborde horizontal en ningún ancho.
+
+`ReloadDispatchButton` conserva toda su funcionalidad y vive al final, compacto
+(`min-h-14`, 56 px): las tres filas operativas son lo que el conductor mira en
+marcha. Su altura y la de su panel de resultado cuentan en el layout.
+
+---
+
+## Vista `/itinerary`
+
+Al abrir `/itinerary` se selecciona solo el tramo que corresponde a la hora de
+Ecuador (el que contiene la hora actual; si ninguno, el próximo que aún no
+empieza; si ya terminaron todos, el último). A partir de ahí manda el conductor:
+usar «Anterior»/«Siguiente» fija la selección y los refrescos del despacho ya no
+la mueven.
 
 ---
 
@@ -539,9 +644,9 @@ se tocaría por accidente.
 
 Cuatro secciones, en este orden:
 
-1. **Conectividad del dispositivo** — la misma información y los mismos estados
-   que tenía `/info`. El componente (`src/components/Connectivity.jsx`) se
-   extrajo de la página; no hay dos implementaciones.
+1. **Conectividad del dispositivo** — el componente
+   (`src/components/Connectivity.jsx`) se extrajo de la página; no hay dos
+   implementaciones.
 2. **Conectarse a una red Wi-Fi** — formulario con nombre de red y clave.
 3. **Reiniciar dispositivo.**
 4. **Apagar dispositivo.**
@@ -659,9 +764,9 @@ Home -> POST local -> backend remoto SIMTRA -> validación
      -> persistencia en simtra-bus-manager -> respuesta -> Home actualizada
 ```
 
-Va **al final**, después de Vehículo: los 360 px visibles bajo el navbar siguen
-siendo para Punto actual y Siguiente punto. Se llega desplazando, que es lo que
-el conductor ya hace para ver Línea y Vehículo.
+Va **al final**, después de las tres filas operativas: lo que el conductor mira
+en marcha es la línea actual y los puntos. Se llega desplazando cuando el
+contenido no cabe.
 
 Mientras trabaja muestra «Actualizando itinerario…» con `aria-busy`, y el botón
 queda deshabilitado. El bloqueo de doble envío es un `ref` dentro de
@@ -706,24 +811,41 @@ está en el README de `simtra-bus-manager`.
 
 ---
 
-## Vista `/itinerary`
-
-Al abrir `/itinerary` se selecciona solo el tramo que corresponde a la hora de
-Ecuador (el que contiene la hora actual; si ninguno, el próximo que aún no
-empieza; si ya terminaron todos, el último). A partir de ahí manda el conductor:
-usar «Anterior»/«Siguiente» fija la selección y los refrescos del despacho ya no
-la mueven.
-
----
-
 ## Vista `/info`
 
-Pantalla **puramente institucional**: título, descripción, los dos logotipos y
-datos de contacto.
+Ficha del vehículo y contenido institucional: título, **Información del
+vehículo**, descripción, los dos logotipos y datos de contacto.
 
 > La conectividad del equipo, el formulario de Wi-Fi y el apagado se **mudaron a
 > `/settings`** (Configuración, el engranaje del navbar). `/info` conserva una
 > nota que lo dice, para que quien los busque donde estaban los encuentre.
+
+### Información del vehículo
+
+Es la **única** ficha del vehículo de la aplicación
+(`src/components/VehicleInfoCard.jsx`), y va cerca del inicio de la vista porque
+es el dato que alguien viene a buscar aquí.
+
+Antes estaba **duplicada** entre Home y el panel lateral de `/map`, con campos
+distintos en cada una —Home no mostraba el propietario— y con dos hooks
+consultando `GET /api/vehicle` en paralelo. Ahora reúne los campos de las dos
+versiones:
+
+| Campo | Origen |
+|---|---|
+| Registro | `vehicle.register` |
+| Placa | `vehicle.plate` |
+| Cooperativa | `vehicle.company.name` |
+| Propietario | `vehicle.user.name` + `vehicle.user.lastname` |
+
+Un campo ausente se muestra como «No disponible»; nunca llega un `undefined` o
+un `null` a la pantalla. `useVehicle` conserva la última ficha válida ante un
+fallo puntual de la API local, así que con `status: 'error'` se sigue mostrando
+lo último bueno y el aviso va aparte.
+
+**Consecuencia para Home y Mapa:** ya no montan `useVehicle` ni importan
+`VEHICLE_MESSAGES`, así que **dejaron de hacer polling del vehículo**. Verificado
+en el navegador: ni `/` ni `/map` emiten una sola petición a `/api/vehicle`.
 
 ### Modo kiosco
 
@@ -781,3 +903,43 @@ Se aceptan `.png`, `.jpg`, `.jpeg`, `.svg` y `.webp`; solo importa el nombre
 base. Se descubren con `import.meta.glob`, así que **la aplicación compila
 igual mientras falten**: en su lugar aparece un recuadro discreto con el nombre
 de la organización. Basta con dejar los archivos y recompilar.
+
+Cada logotipo va en **su propio marco**, dentro de un contenedor común que los
+organiza (apilados por debajo de `sm`, lado a lado a partir de ahí). El marco
+tiene fondo claro fijo en los dos temas: muchos logotipos vienen con
+transparencia y texto oscuro, que desaparecería sobre el tema oscuro. La altura
+está acotada (`h-28` / `sm:h-32` / `lg:h-40`) para que en la pantalla de 7" no se
+coman media vista, y la imagen usa `object-contain`: **nunca se recorta ni se
+deforma**.
+
+### El arrastre que empezaba sobre un logotipo
+
+**Síntoma:** al iniciar el gesto de desplazamiento encima de una imagen,
+Chromium arrancaba un *drag-and-drop* nativo del logotipo. Se llevaba el puntero,
+`pointermove` dejaba de llegar y la página no se desplazaba hasta soltar.
+
+Envolver la imagen en un `<div>` **no lo arregla**: el arrastre nace de la propia
+`<img>`. La corrección es en tres capas:
+
+1. `draggable={false}` en cada `<img>`.
+2. `onDragStart={(e) => e.preventDefault()}` en la imagen, porque Chromium
+   dispara `dragstart` igual en algunos caminos pese al atributo.
+3. Un `onDragStart` que cancela **a nivel del contenedor** en `useDragScroll`,
+   que cubre a cualquier descendiente —incluidas imágenes que se agreguen
+   después— sin tener que acordarse en cada una.
+
+Además, `useDragScroll` ganó un `onLostPointerCapture`. Perder la captura sin un
+`pointerup` —el navegador la quita en un gesto cancelado, al salir el puntero de
+la ventana o si un drag nativo arranca pese a todo— dejaba `dragging` en `true`
+para siempre: a partir de ahí el puntero movía el scroll **sin botón pulsado** y
+el arrastre parecía roto. `setPointerCapture` va además en `try/catch`, porque
+lanza si el puntero ya no está activo.
+
+Nada de esto afecta a los controles: `onPointerDown` sigue ignorando el gesto
+que empieza sobre `button`, `a`, `input`, `select`, `textarea` o
+`[contenteditable]`, así que el formulario de Wi-Fi de `/settings` conserva foco
+y escritura. Verificado en el navegador.
+
+Toda la vista usa **un único contenedor vertical de scroll**: sin paneles
+anidados ni alturas fijas, así que se llega al final de la última tarjeta
+arrastrando desde cualquier punto, logotipos incluidos.

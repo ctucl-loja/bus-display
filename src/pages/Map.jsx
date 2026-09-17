@@ -7,9 +7,12 @@ import { findCurrentStep, findCurrentAndNextCheckpoint } from '../utils/itinerar
 // Vista de mapa (`/map`): mapa (~75%) + barra lateral (~25%).
 //
 // Es la Home original. Se movió a su propia ruta cuando `/` pasó a mostrar la
-// información operativa en grande y sin mapa; el mapa y su panel lateral no
-// cambiaron. El itinerario se pide una sola vez aquí y se comparte entre el
-// mapa y el sidebar.
+// información operativa en grande y sin mapa. El itinerario se pide una sola vez
+// aquí y se comparte entre el mapa y el sidebar.
+//
+// El panel lateral ya no incluye la ficha del vehículo: vive en `/info`, en una
+// sola tarjeta con todos sus campos. Por eso esta vista tampoco consulta
+// `useVehicle` — solo el despacho y el GPS.
 //
 // `shrink-0` en la sección del mapa: por debajo de `lg` las dos secciones se
 // apilan dentro de un contenedor flex, y sin él el mapa se comprimía a unos

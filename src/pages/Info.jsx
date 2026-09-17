@@ -1,5 +1,6 @@
 import { useDragScroll } from '../hooks/useDragScroll.js'
 import Card from '../components/Card.jsx'
+import VehicleInfoCard from '../components/VehicleInfoCard.jsx'
 
 // Los logotipos se descubren en tiempo de compilación en vez de importarse:
 // un import estático rompería el build mientras los archivos no existan, y la
@@ -29,6 +30,18 @@ const CONTACT = [
   { label: 'Sitio web', value: 'www.mecdevs.com' },
 ]
 
+// Marco individual de cada logotipo.
+//
+// Fondo claro fijo en los dos temas: muchos logotipos vienen con transparencia y
+// texto oscuro, que desaparecería sobre el tema oscuro. El borde lo separa del
+// fondo de la página cuando el tema es claro.
+//
+// Altura acotada (antes `max-h-120`, que en la pantalla de 7" se comía media
+// vista) y `object-contain`, así que la imagen nunca se recorta ni se deforma.
+const LOGO_FRAME_CLASS =
+  'flex h-28 w-full items-center justify-center rounded-lg border border-slate-200 ' +
+  'bg-white p-3 sm:h-32 sm:max-w-xs lg:h-40 lg:p-4 dark:border-slate-700'
+
 function Logo({ basename, organization }) {
   const source = findLogo(basename)
 
@@ -36,7 +49,9 @@ function Logo({ basename, organization }) {
     // Marcador discreto mientras el archivo no se ha entregado. No se inventa
     // ni se reconstruye el logotipo.
     return (
-      <div className="flex h-24 w-full max-w-xs items-center justify-center rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 text-center dark:border-slate-700 dark:bg-slate-800/40">
+      <div
+        className={`${LOGO_FRAME_CLASS} border-dashed bg-slate-50 text-center dark:bg-slate-800/40`}
+      >
         <span className="text-base font-medium text-slate-500 dark:text-slate-400 lg:text-lg">
           {organization}
         </span>
@@ -45,25 +60,46 @@ function Logo({ basename, organization }) {
   }
 
   return (
-    <img
-      src={source}
-      alt={`Logotipo de ${organization}`}
-      className="max-h-120 w-auto max-w-full object-contain"
-    />
+    <div className={LOGO_FRAME_CLASS}>
+      <img
+        src={source}
+        alt={`Logotipo de ${organization}`}
+        // ── Por qué estos tres atributos ──────────────────────────────────
+        // Chromium trata una imagen como arrastrable por defecto. Al iniciar el
+        // gesto de scroll ENCIMA de un logo, el navegador empezaba un
+        // drag-and-drop nativo de la imagen: se llevaba el puntero, el
+        // `pointermove` dejaba de llegar y la página se quedaba sin desplazarse
+        // hasta soltar. Envolverla en un div no lo arregla — el arrastre nace de
+        // la propia <img>.
+        //
+        //   draggable={false} lo desactiva;
+        //   onDragStart lo cancela también por si algo lo dispara igual
+        //     (Chromium lo hace en algunos caminos pese al atributo);
+        //   select-none evita además la selección de la imagen al arrastrar.
+        draggable={false}
+        onDragStart={(event) => event.preventDefault()}
+        className="max-h-full w-auto max-w-full select-none object-contain"
+      />
+    </div>
   )
 }
 
 /**
- * Vista institucional (`/info`): quién hizo este sistema y cómo contactarlo.
+ * Vista institucional (`/info`): la ficha del vehículo, quién hizo este sistema
+ * y cómo contactarlo.
  *
  * El contenido es inerte: no hay enlaces, `mailto:`, `tel:` ni botones de
  * copiar; los datos de contacto y los logotipos son texto e imágenes, para que
  * nada pueda sacar a Chromium del modo kiosco.
  *
- * Aquí NO hay ninguna acción. La conectividad, el formulario de Wi-Fi, el
- * apagado y el reinicio viven ahora en `/settings` (Configuración): esta vista
- * se mira, aquella hace cosas, y un botón destructivo no debe estar donde el
+ * Aquí NO hay acciones sobre el equipo. La conectividad, el formulario de Wi-Fi,
+ * el apagado y el reinicio viven en `/settings` (Configuración): esta vista se
+ * mira, aquella hace cosas, y un botón destructivo no debe estar donde el
  * conductor entra a leer un teléfono.
+ *
+ * Un ÚNICO contenedor vertical de scroll para toda la página: sin paneles
+ * anidados ni alturas fijas, para que se pueda llegar al final de la última
+ * tarjeta arrastrando desde cualquier punto, logotipos incluidos.
  */
 function Info() {
   const { ref, handlers } = useDragScroll()
@@ -79,6 +115,10 @@ function Info() {
           Acerca de este sistema
         </h1>
 
+        {/* Cerca del inicio a propósito: es el dato que alguien viene a buscar
+            aquí, y antes estaba repartido entre Home y el panel del mapa. */}
+        <VehicleInfoCard />
+
         <Card>
           <p className="text-lg leading-relaxed text-slate-700 dark:text-slate-200 lg:text-xl">
             Esta pantalla informativa fue desarrollada por el Departamento de Desarrollo del
@@ -92,6 +132,9 @@ function Info() {
           </p>
         </Card>
 
+        {/* Contenedor común que organiza los dos logotipos; cada uno lleva
+            además su propio marco (ver `Logo`). Apilados por debajo de `sm`,
+            lado a lado a partir de ahí, con anchos equilibrados. */}
         <div className="flex flex-col items-center justify-center gap-4 sm:flex-row sm:gap-6">
           {LOGOS.map((logo) => (
             <Logo key={logo.basename} {...logo} />
@@ -118,7 +161,7 @@ function Info() {
         <Card title="Red y energía del dispositivo">
           <p className="text-lg leading-relaxed text-slate-700 dark:text-slate-200 lg:text-xl">
             La información de red, la conexión a una red Wi-Fi y el apagado o reinicio del equipo
-            están ahora en <span className="font-semibold">Configuración</span>, el botón con el
+            están en <span className="font-semibold">Configuración</span>, el botón con el
             engranaje de la barra superior.
           </p>
         </Card>
