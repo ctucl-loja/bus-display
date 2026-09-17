@@ -119,7 +119,7 @@ function Home() {
     // La cadena de alturas: MainLayout da `flex-1` al <main>, esto toma `h-full`
     // y `min-h-0` para poder encogerse dentro de él. No se añade otro `h-screen`
     // debajo del navbar, que desbordaría por los 120 px de la barra.
-    <div className="flex h-full min-h-0 flex-col gap-2 overflow-y-auto px-2 py-1.5 lg:gap-4 lg:p-4 xl:gap-3 xl:px-5 xl:py-3">
+    <div className="flex h-full min-h-0 flex-col gap-2 overflow-y-auto px-2 py-1.5 lg:gap-4 lg:p-4 xl:gap-2.5 xl:px-5 xl:py-3">
       {/* `flex-1 basis-0` reparte el espacio sobrante entre las tres filas en
           pantallas altas; `min-h-min` impide que se compriman por debajo de su
           contenido cuando no alcanza — ahí manda el scroll del contenedor. */}

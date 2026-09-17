@@ -85,13 +85,13 @@ const VARIANTS = {
 }
 
 const FRAME_BASE =
-  'flex flex-col justify-center rounded-lg border px-3 py-2 lg:px-5 lg:py-3 xl:px-6 xl:py-3'
+  'flex flex-col justify-center rounded-lg border px-3 py-2 lg:px-5 lg:py-3 xl:px-6 xl:py-2'
 
 function ScheduleField({ label, value, variant }) {
   return (
     <div className="flex items-baseline gap-1.5">
-      <span className={`text-sm lg:text-base xl:text-lg ${variant.scheduleLabel}`}>{label}</span>
-      <span className={`font-mono text-lg font-bold tabular-nums lg:text-xl xl:text-2xl ${variant.scheduleValue}`}>
+      <span className={`text-sm lg:text-base xl:text-2xl ${variant.scheduleLabel}`}>{label}</span>
+      <span className={`font-mono text-lg font-bold tabular-nums lg:text-2xl xl:text-[32px] ${variant.scheduleValue}`}>
         {value}
       </span>
     </div>
