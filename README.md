@@ -28,6 +28,21 @@ geocercas. Así la pantalla sigue funcionando sin señal.
 | Llegadas a puntos de control | `GET /api/events?event_type=checkpoint_arrival&after_id=N` | emitidas por `bus_monitor.py`, consultadas cada 1,5 s |
 | Conectividad del equipo | `GET /api/system/network` | leída del sistema por la RPi, consultada cada 30 s |
 
+Y tres acciones que **escriben** sobre el equipo, todas desde la vista de
+Configuración salvo la última:
+
+| Acción | Endpoint local | Efecto |
+|---|---|---|
+| Conectar a una red Wi-Fi | `POST /api/system/wifi/connect` | La RPi cambia de red (`nmcli`) |
+| Apagar el dispositivo | `POST /api/system/shutdown` | La RPi se apaga en unos segundos |
+| Reiniciar el dispositivo | `POST /api/system/reboot` | La RPi se reinicia en unos segundos |
+| Volver a cargar itinerario | `POST /api/dispatch/refresh` | La API local rebaja el despacho del backend remoto y lo guarda |
+
+`POST /api/dispatch/refresh` es la **única** acción de la pantalla que provoca
+una salida a internet, y sigue sin hacerla la pantalla: la hace
+`simtra-bus-manager` con las credenciales de su `.env`. **Ninguna credencial del
+backend remoto llega al navegador.**
+
 ## Configuración
 
 **No hace falta configurar nada para el uso normal.** La pantalla deriva la URL
@@ -87,12 +102,27 @@ Producción (kiosco en la RPi): ver [Despliegue en producción](#despliegue-en-p
 ## Tests
 
 Funciones puras (parsing de horarios, selección de tramo, normalización de las
-respuestas de la API, formato de diferencias) con el runner de Node, sin
-dependencias nuevas:
+respuestas de la API, formato de diferencias, validación del formulario de Wi-Fi
+y textos de apagado/reinicio) con el runner de Node, sin dependencias nuevas:
 
 ```bash
 pnpm test
+pnpm lint
+pnpm build
 ```
+
+La lógica que merece una prueba vive en `src/utils/` y `src/services/normalize.js`
+precisamente por esto: son módulos sin React, sin `fetch` y sin
+`import.meta.env`, así que `node --test` puede importarlos. Los componentes
+importan `src/config/env.js`, que usa `window`, y no son ejecutables fuera del
+navegador.
+
+**Limitación consciente:** no hay tests de componentes. El enmascarado del campo
+de clave, los diálogos de confirmación, el desplazamiento táctil y la
+distribución a 800x480 se verifican **a mano en el navegador**; la suite no los
+cubre. Lo que sí está cubierto son las decisiones con reglas dentro: qué estado
+puede vaciar el itinerario, qué acción se anuncia ante un conflicto de energía y
+qué entradas rechaza el formulario.
 
 ## Acceso desde una laptop de la misma LAN
 
@@ -469,8 +499,16 @@ Constantes: `POLL_INTERVAL_MS` (1500 ms) en el hook y
 |---|---|
 | `/` | Home: línea con el código del despacho, punto actual/siguiente y vehículo a plena anchura y en tipografía grande. Sin mapa y, por tanto, sin polling de GPS |
 | `/map` | Mapa con la posición en vivo del bus y los puntos de control del tramo + panel lateral con esos mismos datos, en versión compacta |
-| `/info` | Vista informativa: origen del sistema, logotipos, contacto, conectividad del equipo y apagado del dispositivo |
+| `/info` | Vista informativa: origen del sistema, logotipos y contacto |
 | `/itinerary` | Tabla del tramo: hora calculada vs hora reportada, navegable entre tramos |
+| `/settings` | Configuración: red del equipo, conexión Wi-Fi, apagado y reinicio |
+
+`/settings` aparece en el navbar como un **engranaje sin etiqueta**: a 800 px no
+cabe una quinta palabra junto al reloj y los otros cuatro enlaces, y provocaba
+desborde horizontal. Conserva el nombre accesible «Configuración» vía
+`aria-label`, `title` y un `<span class="sr-only">`. Todas las rutas siguen
+dentro de `MainLayout`, así que los avisos de llegada aparecen igual en
+cualquiera de ellas.
 
 `/` y `/map` comparten la lógica (`useDispatch`, `useVehicle`,
 `findCurrentStep`, `findCurrentAndNextCheckpoint`, `describeLine`) y solo
@@ -491,28 +529,184 @@ Dos diferencias deliberadas de Home respecto del panel de `/map`:
 
 ---
 
-## Apagado del dispositivo
+## Vista `/settings` (Configuración)
 
-El botón vive al final de `/info`, bajo «Energía del dispositivo», junto a la
-conectividad del equipo. **No está en la barra de navegación**: es una acción
-destructiva y ahí se tocaría por accidente.
+Reúne todo lo que **actúa** sobre el equipo. Antes vivía repartido en `/info`;
+se separó a propósito: `/info` es una vista que se mira, Configuración es una
+vista que hace cosas, y un botón destructivo no debe estar donde el conductor
+entra a leer un teléfono. **Nada de esto está en la barra de navegación**, donde
+se tocaría por accidente.
 
-Siempre son dos pasos. El botón abre un diálogo que dice qué va a pasar —«Esto
-provocará que el dispositivo se apague»— con **Apagar** y **Cancelar**; un solo
-toque nunca apaga el bus. Al confirmar se llama a
-`POST /api/system/shutdown` de la API local (sin cuerpo: el comando vive en la
-Raspberry) y la pantalla muestra el resultado:
+Cuatro secciones, en este orden:
+
+1. **Conectividad del dispositivo** — la misma información y los mismos estados
+   que tenía `/info`. El componente (`src/components/Connectivity.jsx`) se
+   extrajo de la página; no hay dos implementaciones.
+2. **Conectarse a una red Wi-Fi** — formulario con nombre de red y clave.
+3. **Reiniciar dispositivo.**
+4. **Apagar dispositivo.**
+
+La vista comparte **una sola instancia** de `useNetworkInfo` entre la lista de
+conexiones y el formulario, así que conectarse a una red actualiza la
+información de arriba de inmediato en vez de esperar al refresco de 30 s.
+
+El desplazamiento usa `useDragScroll`, que **ignora el gesto cuando empieza
+sobre un `input`, un `select`, un `textarea` o un `button`**: arrastrar para
+desplazar no roba el foco a los campos del formulario.
+
+---
+
+## Conexión Wi-Fi
+
+### «Usuario» significa nombre de red (SSID)
+
+En la conversación del proyecto se habló de «usuario y clave». En esta pantalla
+**«usuario» es el NOMBRE DE LA RED WI-FI (SSID)**, y así está etiquetado el
+campo: «Nombre de red (SSID)».
+
+No es el usuario del backend remoto SIMTRA, ni un usuario del sistema, ni una
+identidad 802.1X. **No hay soporte WPA-Enterprise**: el equipo se conecta a redes
+WPA/WPA2-PSK o abiertas.
+
+### Tratamiento de la clave
+
+Está concentrado en `src/components/WifiForm.jsx` para que sea auditable de un
+vistazo:
+
+- El campo es `type="password"` y **no cambia nunca de tipo**. No hay icono de
+  ojo, botón de revelar ni ninguna presentación en claro. La máscara la dibuja el
+  navegador (punto o asterisco, según el equipo).
+- El campo **no está controlado** por React, al contrario que el SSID. Con un
+  input controlado React escribe el valor también como **atributo `value`** del
+  nodo, y entonces la clave en claro forma parte del marcado: sale en el
+  inspector, en cualquier `innerHTML` y para una extensión que lea el DOM. Sin
+  estado de React, el valor solo existe en la propiedad del input.
+- **No se guarda** en `localStorage`, `sessionStorage`, la URL, ningún log ni
+  ninguna tabla de la aplicación. Viaja en el **cuerpo** del POST, nunca en query
+  string.
+- Se **borra** al terminar la operación —salga bien o mal, incluido el reintento
+  tras una clave incorrecta— y **al abandonar la vista**.
+- El **SSID actual sí se precarga** cuando el equipo lo reporta (y solo mientras
+  el conductor no haya escrito nada). La **clave nunca se precarga**, ni siquiera
+  la que el equipo ya tenga guardada.
+- Ningún mensaje de error cita el valor recibido.
+
+### Validación y estados
+
+Se valida antes de enviar: SSID no vacío, máximo 32 **octetos** (no caracteres:
+`ñ` ocupa dos), sin caracteres de control y sin empezar por `-`. Clave vacía
+(red abierta o reconectar con el perfil guardado) o entre 8 y 63 caracteres.
+
+El botón se deshabilita mientras hay un envío en curso, con un `ref` y no con el
+estado de React: dos toques seguidos en la pantalla táctil ocurren dentro del
+mismo ciclo de render.
+
+| Respuesta | Tono |
+|---|---|
+| `connected` | éxito |
+| `invalid_password`, `not_found`, `unavailable`, `no_adapter`, `not_authorized`, `failed` | error |
+| `timeout`, `busy` | aviso |
+
+### Si se pierde la respuesta
+
+Cambiar de red **corta la conexión de quien esté viendo la pantalla desde otro
+dispositivo** de la red anterior. La pantalla no interpreta eso como un fracaso:
+muestra un aviso que dice exactamente qué pasó y pide comprobar la información de
+red del equipo. El equipo, mientras tanto, **sí verifica** la conexión antes de
+responder `connected`.
+
+---
+
+## Apagado y reinicio del dispositivo
+
+Los dos botones están al final de `/settings`, bajo «Energía del dispositivo», y
+comparten implementación (`src/components/PowerActionButton.jsx`): solo cambian
+los textos, el icono y la ruta.
+
+Siempre son **dos pasos**, para ambas acciones. El botón abre un diálogo que dice
+qué va a pasar, con la acción y **Cancelar**; un solo toque nunca apaga ni
+reinicia el bus. Al confirmar se llama a `POST /api/system/shutdown` o
+`POST /api/system/reboot` (sin cuerpo: **el comando vive en la Raspberry y el
+frontend no puede proponerlo** — solo elige la ruta).
 
 | Respuesta | Mensaje |
 |---|---|
-| `scheduled` | El dispositivo se está apagando |
-| `already_scheduled` | El apagado ya estaba en curso |
-| `unavailable` | Este equipo no permite apagarse desde la pantalla |
-| fallo de red | No se pudo contactar con el equipo; el dispositivo sigue encendido, con botón «Volver» para reintentar |
+| `scheduled` | El dispositivo se está apagando / reiniciando |
+| `already_scheduled` | La acción **pendiente** ya estaba en curso |
+| `unavailable` | Este equipo no permite apagarse / reiniciarse desde la pantalla |
+| fallo de red | No se pudo contactar con el equipo; sigue encendido, con botón «Volver» para reintentar |
 
-El corte real ocurre unos segundos después de la respuesta, para que el aviso
-alcance a mostrarse. La configuración de `sudo` en la Raspberry está en el
-README de `simtra-bus-manager`.
+**El conflicto se anuncia por la acción real, no por la pedida.** Si el conductor
+toca «Reiniciar» cuando ya había un apagado en curso, la respuesta trae
+`pending_action: "shutdown"` y la pantalla dice que se está **apagando** —
+anunciar un reinicio lo dejaría esperando una pantalla que no va a volver.
+
+Ningún texto afirma que la acción terminó: la respuesta llega **antes** de que el
+sistema ejecute el comando. La ejecución real ocurre unos segundos después, para
+que el aviso alcance a mostrarse. La configuración de `sudo` en la Raspberry está
+en el README de `simtra-bus-manager`.
+
+---
+
+## Volver a cargar itinerario
+
+Botón al final de la Home. **No recarga la página ni repite `GET /api/dispatch`**
+—eso solo relee lo que ya está cacheado en la RPi—: llama a
+`POST /api/dispatch/refresh`, que dispara el viaje completo.
+
+```
+Home -> POST local -> backend remoto SIMTRA -> validación
+     -> persistencia en simtra-bus-manager -> respuesta -> Home actualizada
+```
+
+Va **al final**, después de Vehículo: los 360 px visibles bajo el navbar siguen
+siendo para Punto actual y Siguiente punto. Se llega desplazando, que es lo que
+el conductor ya hace para ver Línea y Vehículo.
+
+Mientras trabaja muestra «Actualizando itinerario…» con `aria-busy`, y el botón
+queda deshabilitado. El bloqueo de doble envío es un `ref` dentro de
+`useDispatch`, no el estado de React.
+
+| Resultado | Qué pasa en pantalla |
+|---|---|
+| `updated` | El itinerario nuevo se aplica **de inmediato**, sin esperar al polling de 60 s |
+| `empty` | El bus no trabaja hoy: la pantalla queda vacía, que es lo correcto |
+| `auth_error`, `remote_error`, `invalid`, `save_error` | Mensaje en rojo y **se conserva el itinerario anterior** |
+
+Si la recarga conservó marcaciones locales que el servidor aún no conocía, se
+dice: «Se conservaron N llegada(s) registradas en este equipo y aún no enviadas
+al servidor». Sin ese texto, el conductor podría creer que la recarga le borró
+llegadas ya hechas.
+
+### Estado separado y respuestas que llegan tarde
+
+`useDispatch()` expone `refresh`, `refreshing` y `refreshResult` **aparte** de
+`status`: mientras se recarga, la Home sigue mostrando el itinerario actual con
+normalidad, no vuelve a «Cargando itinerario…».
+
+Cada escritura de `steps` lleva un número de secuencia y una respuesta con un
+número menor que el último aplicado se descarta. Sin eso, el polling de 60 s que
+salió **antes** de la recarga puede terminar **después** y devolver el itinerario
+viejo encima del recién descargado: el botón diría «actualizado» y los datos
+serían los de siempre.
+
+### Coherencia con Mapa e Itinerario
+
+`/map` e `/itinerary` montan su propia instancia de `useDispatch` y leen de la
+API local, que ya tiene el itinerario nuevo: al navegar muestran lo mismo que
+Home, sin ningún estado compartido entre vistas.
+
+### El monitor tarda un poco más
+
+La pantalla se actualiza al instante, pero `simtra-bus-monitor` es **otro
+proceso**: adopta el itinerario nuevo —y sus geocercas— en hasta 10 s, por el
+canal de eventos locales. Si ese servicio está detenido, **no adopta nada**: la
+pantalla mostrará el itinerario nuevo y el geofencing seguirá parado. El detalle
+está en el README de `simtra-bus-manager`.
+
+---
+
+## Vista `/itinerary`
 
 Al abrir `/itinerary` se selecciona solo el tramo que corresponde a la hora de
 Ecuador (el que contiene la hora actual; si ninguno, el próximo que aún no
@@ -524,9 +718,12 @@ la mueven.
 
 ## Vista `/info`
 
-Pantalla informativa accesible desde el navbar. Muestra, en este orden: título,
-descripción institucional, los dos logotipos, datos de contacto y la
-conectividad del equipo.
+Pantalla **puramente institucional**: título, descripción, los dos logotipos y
+datos de contacto.
+
+> La conectividad del equipo, el formulario de Wi-Fi y el apagado se **mudaron a
+> `/settings`** (Configuración, el engranaje del navbar). `/info` conserva una
+> nota que lo dice, para que quien los busque donde estaban los encuentre.
 
 ### Modo kiosco
 
@@ -544,7 +741,10 @@ React Router dentro de la misma aplicación. `index.html` incluye además
 `format-detection` para que el navegador no convierta el teléfono o el correo en
 enlaces por su cuenta.
 
-### Conectividad del dispositivo
+### Conectividad del dispositivo (ahora en `/settings`)
+
+Documentada aquí porque es donde se busca. **La sección vive en `/settings`**;
+el componente es `src/components/Connectivity.jsx`.
 
 La información describe **la Raspberry Pi**, no el equipo desde el que se abre
 la pantalla: si abres la interfaz desde una laptop, sigues viendo la red de la
@@ -563,8 +763,12 @@ Estados posibles en pantalla:
 | `unavailable` | «Información de red no disponible» |
 | Fallo transitorio | se conserva la última información válida + «No se pudo actualizar la información de red» |
 
-Esta vista solo informa de interfaces y direcciones locales; **no comprueba si
+Esta sección solo informa de interfaces y direcciones locales; **no comprueba si
 hay acceso a internet**, que es una cosa distinta de estar conectado a una red.
+
+Desde que existe el formulario de Wi-Fi, esta lista ya no es solo pasiva: tras
+una conexión exitosa se actualiza de inmediato con la red devuelta por el equipo,
+sin esperar al refresco de 30 s.
 
 ### Logotipos
 

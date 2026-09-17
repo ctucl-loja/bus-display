@@ -6,6 +6,7 @@ import { useDispatch } from '../hooks/useDispatch.js'
 import { useVehicle } from '../hooks/useVehicle.js'
 import { findCurrentStep, findCurrentAndNextCheckpoint } from '../utils/itinerary.js'
 import { describeLine } from '../utils/line.js'
+import ReloadDispatchButton from '../components/ReloadDispatchButton.jsx'
 
 // Home (`/`): la misma información operativa que el panel del mapa, pero con
 // todo el ancho del body y tipografía legible desde el asiento del conductor.
@@ -45,7 +46,7 @@ function VehicleField({ label, value, accent = false }) {
 
 function Home() {
   const { time } = useEcuadorClock()
-  const { steps, status } = useDispatch()
+  const { steps, status, refresh, refreshing, refreshResult, dismissRefreshResult } = useDispatch()
   const { vehicle, status: vehicleStatus } = useVehicle()
 
   // Misma selección temporal que la vista de mapa: el punto actual se decide
@@ -95,6 +96,17 @@ function Home() {
             </dl>
           )}
         </InfoCard>
+
+        {/* Al final del todo: los 360 px visibles bajo el navbar siguen siendo
+            para Punto actual y Siguiente punto. El conductor llega al boton
+            desplazando, que es exactamente lo que ya hace para ver Linea y
+            Vehiculo. */}
+        <ReloadDispatchButton
+          onReload={refresh}
+          refreshing={refreshing}
+          result={refreshResult}
+          onDismiss={dismissRefreshResult}
+        />
       </div>
     </div>
   )

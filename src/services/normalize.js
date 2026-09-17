@@ -176,3 +176,113 @@ export function normalizeEvents(raw) {
       payload: isObject(event.payload) ? event.payload : null,
     }))
 }
+
+// ── Conexión Wi-Fi ──────────────────────────────────────────────────────────
+
+const WIFI_STATUSES = [
+  'connected',
+  'invalid_password',
+  'not_found',
+  'timeout',
+  'unavailable',
+  'no_adapter',
+  'not_authorized',
+  'busy',
+  'failed',
+]
+
+/**
+ * Resultado de `POST /api/system/wifi/connect` con forma garantizada.
+ *
+ * Un estado desconocido se degrada a 'failed', NUNCA a 'connected': la pantalla
+ * no puede decirle al conductor que el equipo está conectado porque llegó una
+ * respuesta que no entiende.
+ *
+ * `network` se normaliza igual que la consulta de red, así que la vista puede
+ * mostrar la IP nueva sin esperar al siguiente refresco.
+ *
+ * La clave no forma parte de esta forma: el backend no la devuelve y aquí no se
+ * lee ni se guarda ningún campo que pudiera contenerla.
+ */
+export function normalizeWifiResult(raw) {
+  if (!isObject(raw)) {
+    return { status: 'failed', detail: 'Respuesta no válida del equipo', ssid: null, network: null }
+  }
+
+  return {
+    status: WIFI_STATUSES.includes(raw.status) ? raw.status : 'failed',
+    detail: nonEmptyString(raw.detail) ?? 'No se pudo conectar a la red',
+    ssid: nonEmptyString(raw.ssid),
+    network: raw.network ? normalizeNetworkInfo(raw.network) : null,
+  }
+}
+
+// ── Energía del dispositivo ─────────────────────────────────────────────────
+
+const POWER_STATUSES = ['scheduled', 'already_scheduled', 'unavailable']
+const POWER_ACTIONS = ['shutdown', 'reboot']
+
+/**
+ * Respuesta de apagado o reinicio con forma garantizada.
+ *
+ * Un estado desconocido se degrada a 'unavailable': ante una respuesta que no
+ * se entiende, lo honesto es no prometer que el equipo se va a apagar.
+ *
+ * `pendingAction` puede diferir de `action`: es el caso de pedir un reinicio
+ * cuando ya había un apagado en curso, y la pantalla debe decir lo que
+ * realmente va a pasar.
+ */
+export function normalizePowerResult(raw, requestedAction) {
+  const fallbackAction = POWER_ACTIONS.includes(requestedAction) ? requestedAction : 'shutdown'
+  if (!isObject(raw)) {
+    return { status: 'unavailable', detail: '', action: fallbackAction, pendingAction: null }
+  }
+
+  return {
+    status: POWER_STATUSES.includes(raw.status) ? raw.status : 'unavailable',
+    detail: nonEmptyString(raw.detail) ?? '',
+    action: POWER_ACTIONS.includes(raw.action) ? raw.action : fallbackAction,
+    pendingAction: POWER_ACTIONS.includes(raw.pending_action) ? raw.pending_action : null,
+  }
+}
+
+// ── Recarga manual del itinerario ───────────────────────────────────────────
+
+const REFRESH_STATUSES = [
+  'updated',
+  'empty',
+  'auth_error',
+  'remote_error',
+  'invalid',
+  'save_error',
+]
+
+/**
+ * Respuesta de `POST /api/dispatch/refresh` con forma garantizada.
+ *
+ * `steps` solo se completa cuando la operación cambió el itinerario ('updated'
+ * o 'empty'); en los estados de error es `null`, que significa "no toques lo
+ * que ya tienes". Es la diferencia entre un día sin despachos —que sí debe
+ * vaciar la pantalla— y un fallo de red, que no.
+ *
+ * Un status desconocido se degrada a 'remote_error' con `steps: null`: nunca
+ * se borra el itinerario por una respuesta que no se entiende.
+ */
+export function normalizeDispatchRefresh(raw) {
+  if (!isObject(raw)) {
+    return { status: 'remote_error', detail: 'Respuesta no válida del equipo', steps: null, date: null }
+  }
+
+  const status = REFRESH_STATUSES.includes(raw.status) ? raw.status : 'remote_error'
+  const changed = status === 'updated' || status === 'empty'
+  const dispatch = isObject(raw.dispatch) ? raw.dispatch : null
+
+  return {
+    status,
+    detail: nonEmptyString(raw.detail) ?? '',
+    date: nonEmptyString(raw.date),
+    // 'empty' produce [] a propósito: el día sin despachos es un dato, no un fallo.
+    steps: changed ? normalizeSteps(dispatch?.data) : null,
+    preservedReports: finiteNumber(raw.preserved_reports) ?? 0,
+  }
+}

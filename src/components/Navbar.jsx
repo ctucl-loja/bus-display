@@ -2,13 +2,27 @@ import { NavLink } from 'react-router-dom'
 import { useEcuadorClock } from '../hooks/useEcuadorClock.js'
 import { useTheme } from '../context/ThemeContext.jsx'
 
-// Los cuatro destinos de la pantalla. Todos comparten estilo y estado
-// activo; `icon` sigue soportado abajo aunque hoy ninguno lo use.
+function GearIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1.08-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" />
+    </svg>
+  )
+}
+
+// Los cinco destinos de la pantalla. Todos comparten estilo y estado activo.
+//
+// Configuracion va SOLO con icono: en la pantalla de 7" (800 px) el navbar ya
+// lleva reloj, cuatro enlaces y el cambio de tema, y una etiqueta mas provoca
+// desborde horizontal. `srOnly` mantiene el nombre accesible ("Configuracion")
+// para lectores de pantalla, ademas del aria-label del enlace.
 const NAV_LINKS = [
   { to: '/', label: 'Home' },
   { to: '/map', label: 'Mapa' },
   { to: '/itinerary', label: 'Itinerario' },
   { to: '/info', label: 'Info' },
+  { to: '/settings', label: 'Configuración', icon: GearIcon, srOnly: true },
 ]
 
 function SunIcon(props) {
@@ -50,11 +64,13 @@ function Navbar() {
 
       <div className="flex items-center gap-1">
         <nav className="flex items-center gap-1">
-          {NAV_LINKS.map(({ to, label, icon: Icon }) => (
+          {NAV_LINKS.map(({ to, label, icon: Icon, srOnly }) => (
             <NavLink
               key={to}
               to={to}
               end={to === '/'}
+              aria-label={label}
+              title={label}
               className={({ isActive }) =>
                 `flex min-h-14 items-center gap-2 rounded-md px-4 py-4 text-xl font-medium transition-colors ${
                   isActive
@@ -63,8 +79,8 @@ function Navbar() {
                 }`
               }
             >
-              {Icon && <Icon className="h-7 w-7 shrink-0" />}
-              {label}
+              {Icon && <Icon className="h-9 w-9 shrink-0" />}
+              <span className={srOnly ? 'sr-only' : undefined}>{label}</span>
             </NavLink>
           ))}
         </nav>

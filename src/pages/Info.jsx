@@ -1,6 +1,5 @@
-import { useNetworkInfo } from '../hooks/useNetworkInfo.js'
 import { useDragScroll } from '../hooks/useDragScroll.js'
-import ShutdownButton from '../components/ShutdownButton.jsx'
+import Card from '../components/Card.jsx'
 
 // Los logotipos se descubren en tiempo de compilación en vez de importarse:
 // un import estático rompería el build mientras los archivos no existan, y la
@@ -30,54 +29,6 @@ const CONTACT = [
   { label: 'Sitio web', value: 'www.mecdevs.com' },
 ]
 
-const CONNECTION_LABELS = {
-  wifi: 'Wi-Fi',
-  ethernet: 'Conexión por cable',
-  other: 'Otra conexión',
-}
-
-function WifiIcon(props) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>
-      <path d="M2 8.8a15 15 0 0 1 20 0" />
-      <path d="M5 12.5a11 11 0 0 1 14 0" />
-      <path d="M8.5 16.1a6 6 0 0 1 7 0" />
-      <path d="M12 20h.01" />
-    </svg>
-  )
-}
-
-function EthernetIcon(props) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>
-      <rect x="3" y="9" width="18" height="11" rx="2" />
-      <path d="M7 9V5h10v4" />
-      <path d="M8 20v-3M12 20v-3M16 20v-3" />
-    </svg>
-  )
-}
-
-function NetworkIcon({ type, className }) {
-  if (type === 'wifi') return <WifiIcon className={className} />
-  if (type === 'ethernet') return <EthernetIcon className={className} />
-  return null
-}
-
-// Tarjeta común: mismo lenguaje visual que InfoCard del sidebar, con tamaños
-// pensados para la pantalla de 7".
-function Card({ title, children }) {
-  return (
-    <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/60 lg:p-6">
-      {title && (
-        <h2 className="mb-3 text-base font-semibold uppercase tracking-wide text-cyan-600/90 dark:text-cyan-400/90 lg:text-lg">
-          {title}
-        </h2>
-      )}
-      {children}
-    </section>
-  )
-}
-
 function Logo({ basename, organization }) {
   const source = findLogo(basename)
 
@@ -94,108 +45,25 @@ function Logo({ basename, organization }) {
   }
 
   return (
-    // Fondo claro fijo: muchos logotipos vienen con transparencia y texto
-    // oscuro, que desaparecería sobre el tema oscuro.
-   
-      <img
-        src={source}
-        alt={`Logotipo de ${organization}`}
-        className="max-h-120 w-auto max-w-full object-contain"
-      />
-  
-  )
-}
-
-function ConnectionRow({ connection }) {
-  const label = CONNECTION_LABELS[connection.type] ?? CONNECTION_LABELS.other
-
-  return (
-    <div className="flex items-start gap-4 rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800/40">
-      <NetworkIcon type={connection.type} className="mt-1 h-8 w-8 shrink-0 text-cyan-600 dark:text-cyan-400" />
-      <dl className="min-w-0 flex-1 space-y-1 text-lg lg:text-xl">
-        <div className="flex flex-wrap gap-x-2">
-          <dt className="text-slate-500 dark:text-slate-400">Tipo:</dt>
-          <dd className="font-semibold text-slate-800 dark:text-slate-100">{label}</dd>
-        </div>
-        {connection.type === 'wifi' && (
-          <div className="flex flex-wrap gap-x-2">
-            <dt className="text-slate-500 dark:text-slate-400">Red:</dt>
-            <dd className="break-all font-semibold text-slate-800 dark:text-slate-100">
-              {connection.name ?? 'Nombre no disponible'}
-            </dd>
-          </div>
-        )}
-        <div className="flex flex-wrap gap-x-2">
-          <dt className="text-slate-500 dark:text-slate-400">Interfaz:</dt>
-          <dd className="font-mono text-slate-800 dark:text-slate-100">
-            {connection.interface ?? '—'}
-          </dd>
-        </div>
-        <div className="flex flex-wrap gap-x-2">
-          <dt className="text-slate-500 dark:text-slate-400">
-            {connection.ipv4.length > 1 ? 'Direcciones IP:' : 'Dirección IP:'}
-          </dt>
-          <dd className="font-mono tabular-nums text-slate-800 dark:text-slate-100">
-            {connection.ipv4.length > 0 ? connection.ipv4.join(' · ') : 'Sin dirección asignada'}
-          </dd>
-        </div>
-      </dl>
-    </div>
-  )
-}
-
-function Connectivity() {
-  const { info, status } = useNetworkInfo()
-  const connections = info?.connections ?? []
-
-  if (status === 'loading') {
-    return <p className="text-lg text-slate-500 dark:text-slate-400 lg:text-xl">Consultando información de red…</p>
-  }
-
-  // Con un fallo transitorio se conserva la última información válida y el
-  // aviso va aparte, en tono discreto.
-  if (connections.length === 0) {
-    const message =
-      info?.status === 'disconnected'
-        ? 'Sin conexión de red detectada'
-        : 'Información de red no disponible'
-    return (
-      <>
-        <p className="text-lg text-slate-500 dark:text-slate-400 lg:text-xl">{message}</p>
-        {status === 'error' && <StaleNotice />}
-      </>
-    )
-  }
-
-  return (
-    <div className="space-y-3">
-      {connections.map((connection) => (
-        <ConnectionRow key={connection.key} connection={connection} />
-      ))}
-      {status === 'error' && <StaleNotice />}
-    </div>
-  )
-}
-
-function StaleNotice() {
-  return (
-    <p className="text-base text-amber-600 dark:text-amber-400">
-      No se pudo actualizar la información de red
-    </p>
+    <img
+      src={source}
+      alt={`Logotipo de ${organization}`}
+      className="max-h-120 w-auto max-w-full object-contain"
+    />
   )
 }
 
 /**
- * Vista informativa y de estado del equipo.
+ * Vista institucional (`/info`): quién hizo este sistema y cómo contactarlo.
  *
- * El contenido informativo es inerte: no hay enlaces, `mailto:`, `tel:` ni
- * botones de copiar; los datos de contacto y los logotipos son texto e
- * imágenes, para que nada pueda sacar a Chromium del modo kiosco.
+ * El contenido es inerte: no hay enlaces, `mailto:`, `tel:` ni botones de
+ * copiar; los datos de contacto y los logotipos son texto e imágenes, para que
+ * nada pueda sacar a Chromium del modo kiosco.
  *
- * La única acción de la vista es el apagado del dispositivo, al final y con
- * confirmación explícita. Vive aquí, junto a la conectividad del equipo,
- * porque es la vista del DISPOSITIVO y porque un botón destructivo no debe
- * estar en la barra de navegación, donde se toca por accidente.
+ * Aquí NO hay ninguna acción. La conectividad, el formulario de Wi-Fi, el
+ * apagado y el reinicio viven ahora en `/settings` (Configuración): esta vista
+ * se mira, aquella hace cosas, y un botón destructivo no debe estar donde el
+ * conductor entra a leer un teléfono.
  */
 function Info() {
   const { ref, handlers } = useDragScroll()
@@ -247,20 +115,12 @@ function Info() {
           </dl>
         </Card>
 
-        <Card title="Conectividad del dispositivo">
-          <p className="mb-4 text-base text-slate-500 dark:text-slate-400 lg:text-lg">
-            Red a la que está conectado este equipo (la Raspberry Pi), no el dispositivo desde el
-            que se abre esta pantalla.
+        <Card title="Red y energía del dispositivo">
+          <p className="text-lg leading-relaxed text-slate-700 dark:text-slate-200 lg:text-xl">
+            La información de red, la conexión a una red Wi-Fi y el apagado o reinicio del equipo
+            están ahora en <span className="font-semibold">Configuración</span>, el botón con el
+            engranaje de la barra superior.
           </p>
-          <Connectivity />
-        </Card>
-
-        <Card title="Energía del dispositivo">
-          <p className="mb-4 text-base text-slate-500 dark:text-slate-400 lg:text-lg">
-            Apagado ordenado del equipo (la Raspberry Pi). Úselo antes de cortar la alimentación
-            del bus: desconectarlo en caliente puede dañar la tarjeta de memoria.
-          </p>
-          <ShutdownButton />
         </Card>
       </div>
     </div>

@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { requestShutdown } from '../services/powerApi.js'
+import { requestShutdown, requestReboot } from '../services/powerApi.js'
+import { POWER_ACTION_TEXTS, POWER_NETWORK_ERROR, resultMessage } from '../utils/powerMessages.js'
 
 function PowerIcon(props) {
   return (
@@ -10,41 +11,55 @@ function PowerIcon(props) {
   )
 }
 
-// Mensaje final por estado de la API. `scheduled` es el único que promete un
-// apagado; los demás se dicen tal cual, sin adornar.
-const RESULT_MESSAGES = {
-  scheduled: { tone: 'ok', text: 'El dispositivo se está apagando. Puede desconectar la alimentación cuando la pantalla se apague.' },
-  already_scheduled: { tone: 'ok', text: 'El apagado ya estaba en curso.' },
-  unavailable: { tone: 'error', text: 'Este equipo no permite apagarse desde la pantalla.' },
+function RestartIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>
+      <path d="M3 12a9 9 0 0 1 15.3-6.4L21 8" />
+      <path d="M21 3v5h-5" />
+      <path d="M21 12a9 9 0 0 1-15.3 6.4L3 16" />
+      <path d="M3 21v-5h5" />
+    </svg>
+  )
 }
 
-const NETWORK_ERROR = {
-  tone: 'error',
-  text: 'No se pudo contactar con el equipo. El dispositivo sigue encendido.',
+// Cada acción = sus textos (utils/powerMessages.js, probados aparte) más el
+// icono y la llamada a la API. El frontend no elige ningún comando: solo la
+// ruta. El comando vive en el equipo.
+const ACTIONS = {
+  shutdown: { ...POWER_ACTION_TEXTS.shutdown, Icon: PowerIcon, request: requestShutdown },
+  reboot: { ...POWER_ACTION_TEXTS.reboot, Icon: RestartIcon, request: requestReboot },
 }
 
 /**
- * Apagado ordenado de la Raspberry desde la pantalla táctil.
+ * Apagado o reinicio de la Raspberry desde la pantalla táctil.
  *
- * En modo kiosco no hay teclado ni escritorio: sin este botón la única forma
- * de apagar el equipo es cortarle la corriente, que es justo lo que corrompe
- * la tarjeta SD.
+ * En modo kiosco no hay teclado ni escritorio: sin estos botones, la única
+ * forma de apagar o reiniciar el equipo es cortarle la corriente, que es justo
+ * lo que corrompe la tarjeta SD.
  *
- * Dos pasos siempre: el botón abre un diálogo de confirmación que dice qué va
- * a pasar, con «Apagar» y «Cancelar». Un solo toque nunca apaga el bus.
+ * Dos pasos SIEMPRE, para las dos acciones: el botón abre un diálogo de
+ * confirmación que dice qué va a pasar, con la acción y «Cancelar». Un solo
+ * toque nunca apaga ni reinicia el bus.
+ *
+ * El frontend no elige ningún comando: solo la ruta de la API. El comando vive
+ * en el equipo.
  */
-function ShutdownButton() {
+function PowerActionButton({ action = 'shutdown' }) {
+  const config = ACTIONS[action] ?? ACTIONS.shutdown
+
   // 'idle' | 'confirming' | 'sending' | 'done'
   const [phase, setPhase] = useState('idle')
   const [result, setResult] = useState(null)
 
   async function confirm() {
+    // El propio `phase` bloquea el reenvío: el botón de confirmar queda
+    // deshabilitado en cuanto se entra en 'sending'.
+    if (phase === 'sending') return
     setPhase('sending')
     try {
-      const response = await requestShutdown()
-      setResult(RESULT_MESSAGES[response?.status] ?? RESULT_MESSAGES.unavailable)
+      setResult(resultMessage(await config.request(), action))
     } catch {
-      setResult(NETWORK_ERROR)
+      setResult(POWER_NETWORK_ERROR)
     }
     setPhase('done')
   }
@@ -84,16 +99,15 @@ function ShutdownButton() {
       <div
         role="alertdialog"
         aria-modal="false"
-        aria-labelledby="shutdown-title"
-        aria-describedby="shutdown-description"
+        aria-labelledby={`power-${action}-title`}
+        aria-describedby={`power-${action}-description`}
         className="rounded-lg border-2 border-red-500/60 bg-red-50 p-4 dark:bg-red-500/10"
       >
-        <h3 id="shutdown-title" className="text-xl font-bold text-red-700 lg:text-2xl dark:text-red-400">
-          ¿Apagar el dispositivo?
+        <h3 id={`power-${action}-title`} className="text-xl font-bold text-red-700 lg:text-2xl dark:text-red-400">
+          {config.title}
         </h3>
-        <p id="shutdown-description" className="mt-2 text-lg leading-relaxed text-slate-700 lg:text-xl dark:text-slate-200">
-          Esto provocará que el dispositivo se apague. La pantalla y el registro de puntos de
-          control dejarán de funcionar hasta que alguien vuelva a encender el equipo.
+        <p id={`power-${action}-description`} className="mt-2 text-lg leading-relaxed text-slate-700 lg:text-xl dark:text-slate-200">
+          {config.description}
         </p>
         <div className="mt-4 flex flex-wrap gap-3">
           <button
@@ -102,7 +116,7 @@ function ShutdownButton() {
             disabled={sending}
             className="min-h-14 rounded-lg bg-red-600 px-6 py-3 text-lg font-bold text-white transition-colors hover:bg-red-700 disabled:opacity-60 lg:text-xl"
           >
-            {sending ? 'Apagando…' : 'Apagar'}
+            {sending ? config.sending : config.confirm}
           </button>
           <button
             type="button"
@@ -117,16 +131,17 @@ function ShutdownButton() {
     )
   }
 
+  const { Icon } = config
   return (
     <button
       type="button"
       onClick={() => setPhase('confirming')}
       className="flex min-h-14 items-center gap-3 rounded-lg border-2 border-red-500/60 px-6 py-3 text-lg font-bold text-red-600 transition-colors hover:bg-red-50 lg:text-xl dark:text-red-400 dark:hover:bg-red-500/10"
     >
-      <PowerIcon className="h-7 w-7 shrink-0" />
-      Apagar dispositivo
+      <Icon className="h-7 w-7 shrink-0" />
+      {config.button}
     </button>
   )
 }
 
-export default ShutdownButton
+export default PowerActionButton
