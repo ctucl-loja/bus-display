@@ -152,7 +152,15 @@ function Home() {
       </div>
 
       <div className="flex min-h-min flex-1 basis-0 flex-col">
-        <LapCard title="Siguiente vuelta" step={nextStep} message={bottomMessage} />
+        {/* `variant="next"` es lo unico que distingue esta tarjeta de la de
+            arriba: mismo componente y mismo contenido, paleta ambar para que
+            no se confunda con «Linea actual». Ver src/components/LapCard.jsx. */}
+        <LapCard
+          title="Siguiente vuelta"
+          step={nextStep}
+          message={bottomMessage}
+          variant="next"
+        />
       </div>
 
       {stale && <StaleNotice />}
