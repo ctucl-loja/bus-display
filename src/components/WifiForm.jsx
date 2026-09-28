@@ -123,7 +123,7 @@ function WifiForm({ currentSsid = null, onConnected }) {
       <div>
         <label
           htmlFor="wifi-ssid"
-          className="block text-lg font-medium text-slate-700 dark:text-slate-200 lg:text-xl"
+          className="block text-lg font-medium text-slate-700 dark:text-slate-200 lg:text-xl xl:text-2xl"
         >
           Nombre de red (SSID)
         </label>
@@ -143,14 +143,14 @@ function WifiForm({ currentSsid = null, onConnected }) {
           spellCheck="false"
           inputMode="text"
           placeholder="Nombre de la red Wi-Fi"
-          className="mt-2 min-h-14 w-full rounded-lg border-2 border-slate-300 bg-white px-4 py-3 text-xl text-slate-900 placeholder:text-slate-400 focus:border-cyan-500 focus:outline-none disabled:opacity-60 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+          className="mt-2 min-h-14 w-full rounded-lg border-2 border-slate-300 bg-white px-4 py-3 text-xl xl:min-h-16 xl:text-2xl text-slate-900 placeholder:text-slate-400 focus:border-cyan-500 focus:outline-none disabled:opacity-60 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
         />
       </div>
 
       <div>
         <label
           htmlFor="wifi-password"
-          className="block text-lg font-medium text-slate-700 dark:text-slate-200 lg:text-xl"
+          className="block text-lg font-medium text-slate-700 dark:text-slate-200 lg:text-xl xl:text-2xl"
         >
           Clave de la red
         </label>
@@ -168,16 +168,16 @@ function WifiForm({ currentSsid = null, onConnected }) {
           autoCorrect="off"
           spellCheck="false"
           placeholder="Déjela vacía si la red es abierta"
-          className="mt-2 min-h-14 w-full rounded-lg border-2 border-slate-300 bg-white px-4 py-3 text-xl text-slate-900 placeholder:text-slate-400 focus:border-cyan-500 focus:outline-none disabled:opacity-60 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+          className="mt-2 min-h-14 w-full rounded-lg border-2 border-slate-300 bg-white px-4 py-3 text-xl xl:min-h-16 xl:text-2xl text-slate-900 placeholder:text-slate-400 focus:border-cyan-500 focus:outline-none disabled:opacity-60 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
         />
-        <p className="mt-2 text-base text-slate-500 dark:text-slate-400">
+        <p className="mt-2 text-base text-slate-500 dark:text-slate-400 lg:text-lg xl:text-xl">
           Mínimo {PSK_MIN_LENGTH} caracteres. La clave no se muestra ni se guarda en la pantalla:
           la conserva el equipo.
         </p>
       </div>
 
       {problem && (
-        <p role="alert" className="text-lg font-medium text-red-600 dark:text-red-400">
+        <p role="alert" className="text-lg font-medium text-red-600 dark:text-red-400 lg:text-xl xl:text-2xl">
           {problem}
         </p>
       )}
@@ -185,7 +185,7 @@ function WifiForm({ currentSsid = null, onConnected }) {
       <button
         type="submit"
         disabled={sending}
-        className="flex min-h-14 w-full items-center justify-center gap-3 rounded-lg bg-cyan-600 px-6 py-3 text-xl font-bold text-white transition-colors hover:bg-cyan-700 disabled:opacity-60 sm:w-auto"
+        className="flex min-h-14 w-full items-center justify-center gap-3 rounded-lg bg-cyan-600 px-6 py-3 text-xl font-bold text-white transition-colors hover:bg-cyan-700 disabled:opacity-60 sm:w-auto xl:min-h-16 xl:text-2xl"
       >
         {sending ? 'Conectando…' : 'Conectar'}
       </button>
@@ -194,7 +194,7 @@ function WifiForm({ currentSsid = null, onConnected }) {
         <div
           role="status"
           aria-live="polite"
-          className={`rounded-lg border-2 p-4 text-lg font-semibold lg:text-xl ${TONE_CLASSES[result.tone] ?? TONE_CLASSES.error}`}
+          className={`rounded-lg border-2 p-4 text-lg font-semibold lg:text-xl xl:text-2xl ${TONE_CLASSES[result.tone] ?? TONE_CLASSES.error}`}
         >
           {result.text}
         </div>

@@ -64,27 +64,28 @@ function ArrivalNotification({ event, onClose }) {
       {/* Ancho casi completo del body y tipografía grande: el aviso se lee de
           un vistazo desde el asiento. Las alturas están calculadas para que
           un aviso completo —incluso con un nombre de punto que ocupe dos
-          líneas— quepa en los 360 px que quedan bajo el navbar a 800x480. */}
+          líneas— quepa en los 360 px que quedan bajo el navbar a 800x480, y el
+          escalón `xl` para que haga lo mismo en los 668 px de 1280x800. */}
       <div
-        className={`pointer-events-auto w-full max-w-3xl rounded-2xl border-l-8 ${style.border} bg-white/95 px-6 py-5 shadow-2xl shadow-black/30 backdrop-blur lg:max-w-5xl dark:bg-slate-900/95`}
+        className={`pointer-events-auto w-full max-w-3xl rounded-2xl border-l-8 ${style.border} bg-white/95 px-6 py-5 shadow-2xl shadow-black/30 backdrop-blur lg:max-w-5xl xl:px-8 xl:py-7 dark:bg-slate-900/95`}
       >
-        <p className="text-[34px] leading-tight font-bold tracking-wide break-words text-slate-900 lg:text-5xl dark:text-slate-50">
+        <p className="text-[34px] leading-tight font-bold tracking-wide break-words text-slate-900 lg:text-5xl xl:text-6xl dark:text-slate-50">
           {payload.point_name ?? 'Punto de control'}
         </p>
 
-        <p className={`mt-2 flex flex-wrap items-baseline gap-x-4 text-[44px] leading-none font-bold lg:text-6xl ${style.accent}`}>
+        <p className={`mt-2 flex flex-wrap items-baseline gap-x-4 text-[44px] leading-none font-bold lg:text-6xl xl:text-7xl ${style.accent}`}>
           {ARRIVAL_SIGNS[status] && <span aria-hidden="true">{ARRIVAL_SIGNS[status]}</span>}
           <span>{label}</span>
           {/* La diferencia solo se muestra si se conoce y aporta algo: en
               ON_TIME es ruido, y sin dato sería inventarla. */}
           {status !== ARRIVAL_STATUS.ON_TIME && difference && (
-            <span className="text-[34px] font-semibold lg:text-5xl">{difference}</span>
+            <span className="text-[34px] font-semibold lg:text-5xl xl:text-6xl">{difference}</span>
           )}
         </p>
 
-        <dl className="mt-4 flex gap-12 text-3xl lg:text-4xl">
+        <dl className="mt-4 flex gap-12 text-3xl lg:text-4xl xl:gap-16 xl:text-5xl">
           <div>
-            <dt className="text-lg uppercase tracking-wide text-slate-500 lg:text-xl dark:text-slate-400">
+            <dt className="text-lg uppercase tracking-wide text-slate-500 lg:text-xl xl:text-2xl dark:text-slate-400">
               Programado
             </dt>
             <dd className="font-mono font-bold tabular-nums text-slate-800 dark:text-slate-100">
@@ -92,7 +93,7 @@ function ArrivalNotification({ event, onClose }) {
             </dd>
           </div>
           <div>
-            <dt className="text-lg uppercase tracking-wide text-slate-500 lg:text-xl dark:text-slate-400">
+            <dt className="text-lg uppercase tracking-wide text-slate-500 lg:text-xl xl:text-2xl dark:text-slate-400">
               Llegada
             </dt>
             <dd className="font-mono font-bold tabular-nums text-slate-800 dark:text-slate-100">

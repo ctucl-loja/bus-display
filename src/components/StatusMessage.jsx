@@ -10,8 +10,8 @@ const TONE = {
 }
 
 const SIZE = {
-  sm: 'text-sm',
-  lg: 'text-2xl',
+  sm: 'text-sm xl:text-base',
+  lg: 'text-2xl xl:text-3xl',
 }
 
 function StatusMessage({ status, messages, size = 'sm' }) {

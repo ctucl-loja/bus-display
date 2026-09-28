@@ -47,15 +47,15 @@ function Settings() {
       // único que funciona en el kiosco. El hook ignora el gesto cuando empieza
       // sobre un input, un select o un botón, así que arrastrar no roba el foco
       // a los campos del formulario de Wi-Fi.
-      className="h-full touch-none select-none overflow-y-auto overflow-x-hidden p-4 lg:p-6"
+      className="h-full touch-none select-none overflow-y-auto overflow-x-hidden p-4 lg:p-6 xl:p-8"
     >
-      <div className="mx-auto flex max-w-4xl flex-col gap-4 lg:gap-6">
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-50 lg:text-4xl">
+      <div className="mx-auto flex max-w-4xl flex-col gap-4 lg:gap-6 xl:max-w-6xl xl:gap-7">
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-50 lg:text-4xl xl:text-5xl">
           Configuración
         </h1>
 
         <Card title="Conectividad del dispositivo">
-          <p className="mb-4 text-base text-slate-500 dark:text-slate-400 lg:text-lg">
+          <p className="mb-4 text-base text-slate-500 dark:text-slate-400 lg:text-lg xl:text-xl">
             Red a la que está conectado este equipo (la Raspberry Pi), no el dispositivo desde el
             que se abre esta pantalla.
           </p>
@@ -63,7 +63,7 @@ function Settings() {
         </Card>
 
         <Card title="Conectarse a una red Wi-Fi">
-          <p className="mb-4 text-base text-slate-500 dark:text-slate-400 lg:text-lg">
+          <p className="mb-4 text-base text-slate-500 dark:text-slate-400 lg:text-lg xl:text-xl">
             Escriba el nombre de la red (SSID) y su clave. El cambio afecta al equipo del bus. Si
             está viendo esta pantalla desde otro dispositivo, perderá el acceso al cambiar de red.
           </p>
@@ -71,7 +71,7 @@ function Settings() {
         </Card>
 
         <Card title="Energía del dispositivo">
-          <p className="mb-4 text-base text-slate-500 dark:text-slate-400 lg:text-lg">
+          <p className="mb-4 text-base text-slate-500 dark:text-slate-400 lg:text-lg xl:text-xl">
             Apagado y reinicio ordenados del equipo (la Raspberry Pi). Úselos antes de cortar la
             alimentación del bus: desconectarlo en caliente puede dañar la tarjeta de memoria.
           </p>

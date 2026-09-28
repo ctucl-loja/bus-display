@@ -35,16 +35,17 @@ function ReloadDispatchButton({ onReload, refreshing, result, onDismiss }) {
       {/* aria-busy comunica el trabajo en curso además del cambio de texto: el
           botón deshabilitado por sí solo no dice por qué.
 
-          min-h-14 (56 px) mantiene el objetivo táctil cómodo y deja sitio a las
-          tres filas operativas en los 360 px de la pantalla de 7". */}
+          min-h-14 (56 px; 64 px en el panel de 1280x800) mantiene el objetivo
+          táctil cómodo y deja sitio a las tres filas operativas en los 360 px
+          de la pantalla de 7". */}
       <button
         type="button"
         onClick={onReload}
         disabled={refreshing}
         aria-busy={refreshing}
-        className="flex min-h-14 items-center justify-center gap-3 rounded-lg border-2 border-cyan-500/60 px-4 py-2 text-lg font-bold text-cyan-700 transition-colors hover:bg-cyan-50 disabled:opacity-60 lg:px-6 lg:py-3 lg:text-xl dark:text-cyan-400 dark:hover:bg-cyan-500/10"
+        className="flex min-h-14 items-center justify-center gap-3 rounded-lg border-2 border-cyan-500/60 px-4 py-2 text-lg font-bold text-cyan-700 transition-colors hover:bg-cyan-50 disabled:opacity-60 lg:px-6 lg:py-3 lg:text-xl xl:min-h-16 xl:text-2xl dark:text-cyan-400 dark:hover:bg-cyan-500/10"
       >
-        <ReloadIcon className={`h-7 w-7 shrink-0 ${refreshing ? 'animate-spin' : ''}`} />
+        <ReloadIcon className={`h-7 w-7 shrink-0 xl:h-8 xl:w-8 ${refreshing ? 'animate-spin' : ''}`} />
         {refreshing ? 'Actualizando itinerario…' : 'Volver a cargar itinerario'}
       </button>
 
@@ -52,7 +53,7 @@ function ReloadDispatchButton({ onReload, refreshing, result, onDismiss }) {
         <div
           role="status"
           aria-live="polite"
-          className={`rounded-lg border-2 p-4 text-lg font-semibold lg:text-xl ${TONE_CLASSES[result.tone] ?? TONE_CLASSES.error}`}
+          className={`rounded-lg border-2 p-4 text-lg font-semibold lg:text-xl xl:text-2xl ${TONE_CLASSES[result.tone] ?? TONE_CLASSES.error}`}
         >
           <p>{result.detail}</p>
 
@@ -60,7 +61,7 @@ function ReloadDispatchButton({ onReload, refreshing, result, onDismiss }) {
               se conservaron al fusionar. Decirlo evita que el conductor crea
               que la recarga le borró llegadas ya hechas. */}
           {result.preservedReports > 0 && (
-            <p className="mt-1 text-base font-normal">
+            <p className="mt-1 text-base font-normal lg:text-lg xl:text-xl">
               Se conservaron {result.preservedReports} llegada(s) registradas en este equipo y aún
               no enviadas al servidor.
             </p>
@@ -69,7 +70,7 @@ function ReloadDispatchButton({ onReload, refreshing, result, onDismiss }) {
           <button
             type="button"
             onClick={onDismiss}
-            className="mt-3 min-h-14 rounded-lg border border-slate-300 px-5 py-3 text-lg font-medium text-slate-700 transition-colors hover:bg-slate-100 lg:text-xl dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+            className="mt-3 min-h-14 rounded-lg border border-slate-300 px-5 py-3 text-lg font-medium text-slate-700 transition-colors hover:bg-slate-100 lg:text-xl xl:min-h-16 xl:text-2xl dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
           >
             Entendido
           </button>

@@ -5,12 +5,14 @@ import { toEcuadorTime } from '../utils/ecuadorTime.js'
 import { describeLine } from '../utils/line.js'
 
 // Tamaños pensados para la pantalla táctil de 7" de la RPi (800x480): texto
-// grande, filas altas y botones con área de toque cómoda. En `lg` (laptop) solo
-// se agrega aire, la jerarquía es la misma.
+// grande, filas altas y botones con área de toque cómoda. En `lg` (laptop) y en
+// `xl` (el panel de 1280x800) solo se agrega aire y se sube un escalón la
+// tipografía; la jerarquía es la misma. A 1280x800 la tabla sigue enseñando
+// media docena de puntos de control de una vez.
 const NAV_BUTTON_CLASS =
-  'min-h-14 rounded-lg border border-slate-300 px-5 py-3 text-xl font-medium text-slate-600 transition-colors hover:bg-slate-100 disabled:opacity-40 disabled:hover:bg-transparent dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 lg:px-6 lg:text-2xl'
+  'min-h-14 rounded-lg border border-slate-300 px-5 py-3 text-xl font-medium text-slate-600 transition-colors hover:bg-slate-100 disabled:opacity-40 disabled:hover:bg-transparent dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 lg:px-6 lg:text-2xl xl:min-h-16 xl:px-7 xl:text-[26px]'
 
-const CELL_CLASS = 'px-4 py-4 text-xl lg:px-6 lg:text-2xl'
+const CELL_CLASS = 'px-4 py-4 text-xl lg:px-6 lg:text-2xl xl:px-7 xl:py-5 xl:text-[26px]'
 
 function Itinerary() {
   const { steps, status } = useDispatch()
@@ -88,13 +90,13 @@ function Itinerary() {
     // Columna fija: los controles y la línea quedan siempre a la vista y solo
     // la tabla hace scroll. En 480 px de alto, tener que subir para cambiar de
     // tramo sería el peor gesto posible para el conductor.
-    <div className="flex h-full flex-col gap-3 p-3 lg:gap-4 lg:p-6">
+    <div className="flex h-full flex-col gap-3 p-3 lg:gap-4 lg:p-6 xl:gap-5 xl:p-7">
       {orderedSteps.length > 0 && (
         <div className="flex shrink-0 flex-wrap items-center justify-end gap-3">
           <button type="button" onClick={goPrev} disabled={safeIndex === 0} className={NAV_BUTTON_CLASS}>
             ← Anterior
           </button>
-          <span className="text-xl text-slate-500 dark:text-slate-400 lg:text-2xl">
+          <span className="text-xl text-slate-500 dark:text-slate-400 lg:text-2xl xl:text-3xl">
             Tramo {safeIndex + 1} de {orderedSteps.length}
           </span>
           <button
@@ -109,24 +111,24 @@ function Itinerary() {
       )}
 
       {status === 'loading' && (
-        <p className="text-xl text-slate-500 dark:text-slate-400">Cargando itinerario…</p>
+        <p className="text-xl text-slate-500 dark:text-slate-400 lg:text-2xl xl:text-3xl">Cargando itinerario…</p>
       )}
       {status === 'empty' && (
-        <p className="text-xl text-slate-500 dark:text-slate-400">Sin despacho para hoy</p>
+        <p className="text-xl text-slate-500 dark:text-slate-400 lg:text-2xl xl:text-3xl">Sin despacho para hoy</p>
       )}
       {status === 'error' && (
-        <p className="text-xl text-red-600 dark:text-red-400">No se pudo cargar el itinerario</p>
+        <p className="text-xl text-red-600 dark:text-red-400 lg:text-2xl xl:text-3xl">No se pudo cargar el itinerario</p>
       )}
 
       {step && (
         <>
           {/* Línea y horario en una sola fila: en 480 px de alto cada fila que
               se ahorra arriba es una fila más de tabla visible. */}
-          <div className="flex shrink-0 flex-wrap items-baseline justify-between gap-x-4 rounded-xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-900/60 lg:px-6 lg:py-4">
-            <p className="text-2xl font-semibold text-cyan-600 dark:text-cyan-400 lg:text-3xl">
+          <div className="flex shrink-0 flex-wrap items-baseline justify-between gap-x-4 rounded-xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-900/60 lg:px-6 lg:py-4 xl:px-7 xl:py-5">
+            <p className="text-2xl font-semibold text-cyan-600 dark:text-cyan-400 lg:text-3xl xl:text-4xl">
               {describeLine(step.line)}
             </p>
-            <p className="text-xl tabular-nums text-slate-500 dark:text-slate-400 lg:text-2xl">
+            <p className="text-xl tabular-nums text-slate-500 dark:text-slate-400 lg:text-2xl xl:text-3xl">
               {step.start_schedule && step.end_schedule
                 ? `${step.start_schedule} - ${step.end_schedule}`
                 : 'Sin horario'}
@@ -144,13 +146,13 @@ function Itinerary() {
             onPointerCancel={onPointerUp}
             className="min-h-0 flex-1 cursor-grab touch-none select-none overflow-auto rounded-xl border border-slate-200 bg-white shadow-lg shadow-slate-200/40 active:cursor-grabbing dark:border-slate-800 dark:bg-slate-900/60 dark:shadow-black/40"
           >
-            <table className="w-full min-w-[42rem] text-left">
+            <table className="w-full min-w-[42rem] text-left xl:min-w-[52rem]">
               <thead className="sticky top-0 z-10 bg-white dark:bg-slate-900">
-                <tr className="border-b border-slate-200 text-base uppercase tracking-wide text-cyan-600/80 dark:border-slate-800 dark:text-cyan-400/80 lg:text-lg">
-                  <th className="px-4 py-3 font-medium lg:px-6">#</th>
-                  <th className="px-4 py-3 font-medium lg:px-6">Punto de Control</th>
-                  <th className="whitespace-nowrap px-4 py-3 font-medium lg:px-6">Hora Calculada</th>
-                  <th className="whitespace-nowrap px-4 py-3 font-medium lg:px-6">Hora Reportada</th>
+                <tr className="border-b border-slate-200 text-base uppercase tracking-wide text-cyan-600/80 dark:border-slate-800 dark:text-cyan-400/80 lg:text-lg xl:text-xl">
+                  <th className="px-4 py-3 font-medium lg:px-6 xl:px-7 xl:py-4">#</th>
+                  <th className="px-4 py-3 font-medium lg:px-6 xl:px-7 xl:py-4">Punto de Control</th>
+                  <th className="whitespace-nowrap px-4 py-3 font-medium lg:px-6 xl:px-7 xl:py-4">Hora Calculada</th>
+                  <th className="whitespace-nowrap px-4 py-3 font-medium lg:px-6 xl:px-7 xl:py-4">Hora Reportada</th>
                 </tr>
               </thead>
               <tbody>

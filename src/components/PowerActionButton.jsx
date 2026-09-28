@@ -69,7 +69,7 @@ function PowerActionButton({ action = 'shutdown' }) {
       <div
         role="status"
         aria-live="polite"
-        className={`rounded-lg border-2 p-4 text-lg font-semibold lg:text-xl ${
+        className={`rounded-lg border-2 p-4 text-lg font-semibold lg:text-xl xl:text-2xl ${
           result.tone === 'ok'
             ? 'border-cyan-500/50 bg-cyan-50 text-cyan-800 dark:bg-cyan-500/10 dark:text-cyan-300'
             : 'border-red-500/50 bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-400'
@@ -84,7 +84,7 @@ function PowerActionButton({ action = 'shutdown' }) {
               setResult(null)
               setPhase('idle')
             }}
-            className="mt-3 min-h-14 rounded-lg border border-slate-300 px-5 py-3 text-lg font-medium text-slate-700 transition-colors hover:bg-slate-100 lg:text-xl dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+            className="mt-3 min-h-14 rounded-lg border border-slate-300 px-5 py-3 text-lg font-medium text-slate-700 transition-colors hover:bg-slate-100 lg:text-xl xl:min-h-16 xl:text-2xl dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
           >
             Volver
           </button>
@@ -103,10 +103,10 @@ function PowerActionButton({ action = 'shutdown' }) {
         aria-describedby={`power-${action}-description`}
         className="rounded-lg border-2 border-red-500/60 bg-red-50 p-4 dark:bg-red-500/10"
       >
-        <h3 id={`power-${action}-title`} className="text-xl font-bold text-red-700 lg:text-2xl dark:text-red-400">
+        <h3 id={`power-${action}-title`} className="text-xl font-bold text-red-700 lg:text-2xl xl:text-3xl dark:text-red-400">
           {config.title}
         </h3>
-        <p id={`power-${action}-description`} className="mt-2 text-lg leading-relaxed text-slate-700 lg:text-xl dark:text-slate-200">
+        <p id={`power-${action}-description`} className="mt-2 text-lg leading-relaxed text-slate-700 lg:text-xl xl:text-2xl dark:text-slate-200">
           {config.description}
         </p>
         <div className="mt-4 flex flex-wrap gap-3">
@@ -114,7 +114,7 @@ function PowerActionButton({ action = 'shutdown' }) {
             type="button"
             onClick={confirm}
             disabled={sending}
-            className="min-h-14 rounded-lg bg-red-600 px-6 py-3 text-lg font-bold text-white transition-colors hover:bg-red-700 disabled:opacity-60 lg:text-xl"
+            className="min-h-14 rounded-lg bg-red-600 px-6 py-3 text-lg font-bold text-white transition-colors hover:bg-red-700 disabled:opacity-60 lg:text-xl xl:min-h-16 xl:text-2xl"
           >
             {sending ? config.sending : config.confirm}
           </button>
@@ -122,7 +122,7 @@ function PowerActionButton({ action = 'shutdown' }) {
             type="button"
             onClick={() => setPhase('idle')}
             disabled={sending}
-            className="min-h-14 rounded-lg border border-slate-400 px-6 py-3 text-lg font-medium text-slate-700 transition-colors hover:bg-slate-100 disabled:opacity-60 lg:text-xl dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
+            className="min-h-14 rounded-lg border border-slate-400 px-6 py-3 text-lg font-medium text-slate-700 transition-colors hover:bg-slate-100 disabled:opacity-60 lg:text-xl xl:min-h-16 xl:text-2xl dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
           >
             Cancelar
           </button>
@@ -136,7 +136,7 @@ function PowerActionButton({ action = 'shutdown' }) {
     <button
       type="button"
       onClick={() => setPhase('confirming')}
-      className="flex min-h-14 items-center gap-3 rounded-lg border-2 border-red-500/60 px-6 py-3 text-lg font-bold text-red-600 transition-colors hover:bg-red-50 lg:text-xl dark:text-red-400 dark:hover:bg-red-500/10"
+      className="flex min-h-14 items-center gap-3 rounded-lg border-2 border-red-500/60 px-6 py-3 text-lg font-bold text-red-600 transition-colors hover:bg-red-50 lg:text-xl xl:min-h-16 xl:text-2xl dark:text-red-400 dark:hover:bg-red-500/10"
     >
       <Icon className="h-7 w-7 shrink-0" />
       {config.button}

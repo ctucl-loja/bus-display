@@ -40,7 +40,7 @@ const CONTACT = [
 // vista) y `object-contain`, así que la imagen nunca se recorta ni se deforma.
 const LOGO_FRAME_CLASS =
   'flex h-28 w-full items-center justify-center rounded-lg border border-slate-200 ' +
-  'bg-white p-3 sm:h-32 sm:max-w-xs lg:h-40 lg:p-4 dark:border-slate-700'
+  'bg-white p-3 sm:h-32 sm:max-w-xs lg:h-40 lg:p-4 xl:h-48 xl:p-5 dark:border-slate-700'
 
 function Logo({ basename, organization }) {
   const source = findLogo(basename)
@@ -52,7 +52,7 @@ function Logo({ basename, organization }) {
       <div
         className={`${LOGO_FRAME_CLASS} border-dashed bg-slate-50 text-center dark:bg-slate-800/40`}
       >
-        <span className="text-base font-medium text-slate-500 dark:text-slate-400 lg:text-lg">
+        <span className="text-base font-medium text-slate-500 dark:text-slate-400 lg:text-lg xl:text-xl">
           {organization}
         </span>
       </div>
@@ -108,10 +108,10 @@ function Info() {
     <div
       ref={ref}
       {...handlers}
-      className="h-full touch-none select-none overflow-y-auto overflow-x-hidden p-4 lg:p-6"
+      className="h-full touch-none select-none overflow-y-auto overflow-x-hidden p-4 lg:p-6 xl:p-8"
     >
-      <div className="mx-auto flex max-w-4xl flex-col gap-4 lg:gap-6">
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-50 lg:text-4xl">
+      <div className="mx-auto flex max-w-4xl flex-col gap-4 lg:gap-6 xl:max-w-6xl xl:gap-7">
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-50 lg:text-4xl xl:text-5xl">
           Acerca de este sistema
         </h1>
 
@@ -120,11 +120,11 @@ function Info() {
         <VehicleInfoCard />
 
         <Card>
-          <p className="text-lg leading-relaxed text-slate-700 dark:text-slate-200 lg:text-xl">
+          <p className="text-lg leading-relaxed text-slate-700 dark:text-slate-200 lg:text-xl xl:text-2xl">
             Esta pantalla informativa fue desarrollada por el Departamento de Desarrollo del
             Consorcio Ciudad de Loja, bajo la responsabilidad del Ing. Joan David Encarnación Díaz.
           </p>
-          <p className="mt-4 text-lg leading-relaxed text-slate-700 dark:text-slate-200 lg:text-xl">
+          <p className="mt-4 text-lg leading-relaxed text-slate-700 dark:text-slate-200 lg:text-xl xl:text-2xl">
             Este prototipo forma parte de una iniciativa orientada a modernizar la tecnología
             utilizada en el transporte urbano de la ciudad de Loja, mejorar el acceso a la
             información operativa y evaluar nuevas herramientas para conductores, personal técnico
@@ -142,14 +142,14 @@ function Info() {
         </div>
 
         <Card title="Contacto">
-          <p className="text-lg leading-relaxed text-slate-700 dark:text-slate-200 lg:text-xl">
+          <p className="text-lg leading-relaxed text-slate-700 dark:text-slate-200 lg:text-xl xl:text-2xl">
             Para obtener más información, soporte o conocer otros proyectos, puede comunicarse
             mediante los siguientes canales:
           </p>
-          <dl className="mt-4 space-y-2 text-lg lg:text-xl">
+          <dl className="mt-4 space-y-2 text-lg lg:text-xl xl:space-y-3 xl:text-2xl">
             {CONTACT.map(({ label, value }) => (
               <div key={label} className="flex flex-wrap gap-x-3">
-                <dt className="w-32 shrink-0 text-slate-500 dark:text-slate-400">{label}</dt>
+                <dt className="w-32 shrink-0 text-slate-500 dark:text-slate-400 xl:w-40">{label}</dt>
                 <dd className="break-all font-semibold text-slate-800 dark:text-slate-100">
                   {value}
                 </dd>
@@ -159,7 +159,7 @@ function Info() {
         </Card>
 
         <Card title="Red y energía del dispositivo">
-          <p className="text-lg leading-relaxed text-slate-700 dark:text-slate-200 lg:text-xl">
+          <p className="text-lg leading-relaxed text-slate-700 dark:text-slate-200 lg:text-xl xl:text-2xl">
             La información de red, la conexión a una red Wi-Fi y el apagado o reinicio del equipo
             están en <span className="font-semibold">Configuración</span>, el botón con el
             engranaje de la barra superior.

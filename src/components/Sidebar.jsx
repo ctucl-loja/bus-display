@@ -13,30 +13,30 @@ import { describeLine } from '../utils/line.js'
 // consultar `useVehicle` por completo.
 function Sidebar({ status, currentStep, current, next }) {
   return (
-    <div className="flex h-full font-bold flex-col gap-4 overflow-y-auto rounded-xl border border-slate-200 bg-white/60 p-4 shadow-lg shadow-slate-200/40 dark:border-slate-800 dark:bg-slate-900/60 dark:shadow-black/40">
+    <div className="flex h-full font-bold flex-col gap-4 overflow-y-auto rounded-xl border border-slate-200 bg-white/60 p-4 xl:gap-5 xl:p-5 shadow-lg shadow-slate-200/40 dark:border-slate-800 dark:bg-slate-900/60 dark:shadow-black/40">
       <InfoCard title="Línea">
         <StatusMessage status={status} messages={DISPATCH_MESSAGES} />
         {currentStep && (
-          <p className="mt-1 text-xl text-slate-700 dark:text-slate-100">
+          <p className="mt-1 text-xl xl:text-2xl text-slate-700 dark:text-slate-100">
             {describeLine(currentStep.line)}
           </p>
         )}
       </InfoCard>
 
       <InfoCard title="Punto actual">
-        <p className="text-xl font-bold text-slate-700 dark:text-slate-100">
+        <p className="text-xl xl:text-2xl font-bold text-slate-700 dark:text-slate-100">
           {current?.point?.name ?? '—'}
         </p>
-        <p className="mt-1 text-xl font-bold text-amber-600 dark:text-amber-400">
+        <p className="mt-1 text-xl xl:text-2xl font-bold text-amber-600 dark:text-amber-400">
           {current?.time_calculated ?? 'Sin horario'}
         </p>
       </InfoCard>
 
       <InfoCard title="Siguiente punto">
-        <p className="text-xl font-bold text-slate-700 dark:text-slate-100">
+        <p className="text-xl xl:text-2xl font-bold text-slate-700 dark:text-slate-100">
           {next?.point?.name ?? 'Sin más puntos'}
         </p>
-        <p className="mt-1 text-xl font-bold text-amber-600 dark:text-amber-400">
+        <p className="mt-1 text-xl xl:text-2xl font-bold text-amber-600 dark:text-amber-400">
           {next?.time_calculated ?? 'Sin horario'}
         </p>
       </InfoCard>

@@ -45,8 +45,8 @@ export function ConnectionRow({ connection }) {
 
   return (
     <div className="flex items-start gap-4 rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800/40">
-      <NetworkIcon type={connection.type} className="mt-1 h-8 w-8 shrink-0 text-cyan-600 dark:text-cyan-400" />
-      <dl className="min-w-0 flex-1 space-y-1 text-lg lg:text-xl">
+      <NetworkIcon type={connection.type} className="mt-1 h-8 w-8 shrink-0 text-cyan-600 dark:text-cyan-400 xl:h-10 xl:w-10" />
+      <dl className="min-w-0 flex-1 space-y-1 text-lg lg:text-xl xl:text-2xl">
         <div className="flex flex-wrap gap-x-2">
           <dt className="text-slate-500 dark:text-slate-400">Tipo:</dt>
           <dd className="font-semibold text-slate-800 dark:text-slate-100">{label}</dd>
@@ -80,7 +80,7 @@ export function ConnectionRow({ connection }) {
 
 export function StaleNotice() {
   return (
-    <p className="text-base text-amber-600 dark:text-amber-400">
+    <p className="text-base text-amber-600 dark:text-amber-400 lg:text-lg xl:text-xl">
       No se pudo actualizar la información de red
     </p>
   )
@@ -101,7 +101,7 @@ function Connectivity({ info, status }) {
   const connections = info?.connections ?? []
 
   if (status === 'loading') {
-    return <p className="text-lg text-slate-500 dark:text-slate-400 lg:text-xl">Consultando información de red…</p>
+    return <p className="text-lg text-slate-500 dark:text-slate-400 lg:text-xl xl:text-2xl">Consultando información de red…</p>
   }
 
   // Con un fallo transitorio se conserva la última información válida y el
@@ -113,7 +113,7 @@ function Connectivity({ info, status }) {
         : 'Información de red no disponible'
     return (
       <>
-        <p className="text-lg text-slate-500 dark:text-slate-400 lg:text-xl">{message}</p>
+        <p className="text-lg text-slate-500 dark:text-slate-400 lg:text-xl xl:text-2xl">{message}</p>
         {status === 'error' && <StaleNotice />}
       </>
     )
