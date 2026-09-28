@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import { useEcuadorClock } from '../hooks/useEcuadorClock.js'
 import { useTheme } from '../context/ThemeContext.jsx'
+import { PersonIcon } from './PassengerCountCard.jsx'
 
 function GearIcon(props) {
   return (
@@ -28,11 +29,11 @@ function MoonIcon(props) {
   )
 }
 
-// Los cinco destinos de la pantalla. Todos comparten estilo y estado activo.
+// Los seis destinos de la pantalla. Todos comparten estilo y estado activo.
 //
 // `iconOnly` es lo que reparte la segunda fila del navbar: los enlaces con texto
 // van a la izquierda en su orden de siempre, y los de solo icono a la derecha,
-// junto al cambio de tema. Configuración va sin etiqueta porque a 800 px una
+// junto al cambio de tema. Métricas y Configuración van sin etiqueta porque a 800 px una
 // quinta palabra desborda la fila; `srOnly` conserva su nombre accesible además
 // del `aria-label`.
 const NAV_LINKS = [
@@ -40,6 +41,7 @@ const NAV_LINKS = [
   { to: '/map', label: 'Mapa' },
   { to: '/itinerary', label: 'Itinerario' },
   { to: '/info', label: 'Info' },
+  { to: '/metrics', label: 'Métricas', icon: PersonIcon, iconOnly: true, srOnly: true },
   { to: '/settings', label: 'Configuración', icon: GearIcon, iconOnly: true, srOnly: true },
 ]
 

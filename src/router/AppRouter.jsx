@@ -5,6 +5,7 @@ import Map from '../pages/Map.jsx'
 import Itinerary from '../pages/Itinerary.jsx'
 import Info from '../pages/Info.jsx'
 import Settings from '../pages/Settings.jsx'
+import Metrics from '../pages/Metrics.jsx'
 
 function AppRouter() {
   return (
@@ -23,6 +24,8 @@ function AppRouter() {
               Tambien dentro de MainLayout, para que las acciones sobre el
               dispositivo no interrumpan los avisos de llegada. */}
           <Route path="/settings" element={<Settings />} />
+          {/* Analíticas del bus; por ahora, el conteo de pasajeros del día. */}
+          <Route path="/metrics" element={<Metrics />} />
         </Route>
       </Routes>
     </BrowserRouter>

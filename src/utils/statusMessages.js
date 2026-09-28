@@ -11,3 +11,8 @@ export const VEHICLE_MESSAGES = {
   loading: 'Cargando vehículo…',
   empty: 'Sin datos del vehículo',
 }
+
+export const PASSENGER_MESSAGES = {
+  error: 'No se pudo cargar el conteo de pasajeros',
+  loading: 'Cargando pasajeros…',
+}
