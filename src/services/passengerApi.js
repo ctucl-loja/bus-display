@@ -7,8 +7,8 @@ import { fetchJson } from './http.js'
 // descarta aquí para que el hook no cargue con ella. Un `total` que no sea un
 // entero no negativo se trata como respuesta no válida, igual que un cuerpo
 // vacío en `fetchJson`: el hook conserva entonces el último conteo bueno.
-export async function fetchPassengersToday() {
-  const data = await fetchJson(`${env.localApiUrl}/api/passenger/today`, 'los pasajeros de hoy')
+export async function fetchPassengersToday({ timeoutMs } = {}) {
+  const data = await fetchJson(`${env.localApiUrl}/api/passenger/today`, 'los pasajeros de hoy', { timeoutMs })
   const total = data?.total
 
   if (!Number.isInteger(total) || total < 0) {

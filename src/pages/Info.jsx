@@ -1,6 +1,7 @@
 import { useDragScroll } from '../hooks/useDragScroll.js'
 import Card from '../components/Card.jsx'
 import VehicleInfoCard from '../components/VehicleInfoCard.jsx'
+import { APP_VERSION } from '../config/version.js'
 
 // Los logotipos se descubren en tiempo de compilación en vez de importarse:
 // un import estático rompería el build mientras los archivos no existan, y la
@@ -165,6 +166,15 @@ function Info() {
             engranaje de la barra superior.
           </p>
         </Card>
+
+        {/* Pie discreto con la versión de la pantalla: sirve para soporte, no
+            es información operativa, así que vive al final de esta vista y no
+            en el mapa ni en el navbar. */}
+        {APP_VERSION && (
+          <footer className="pb-2 text-center text-base text-slate-500 dark:text-slate-400 lg:text-lg">
+            SIMTRA Bus Display <span className="font-mono">{APP_VERSION}</span>
+          </footer>
+        )}
       </div>
     </div>
   )
